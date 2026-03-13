@@ -11,6 +11,19 @@ export default function AvatarCanvas() {
   const [messages, setMessages] = useState<{ id: string; text: string; timestamp: number }[]>([])
   const [inputValue, setInputValue] = useState("")
   const [isInputFocused, setIsInputFocused] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Check if screen is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Clean up old messages after 5 seconds
   useEffect(() => {
@@ -54,7 +67,11 @@ export default function AvatarCanvas() {
         <directionalLight position={[-5, 5, -5]} intensity={0.5} />
         <pointLight position={[0, 2, 2]} intensity={0.6} color="#a78bfa" />
         <Suspense fallback={null}>
-          <Avatar scale={0.9} position={[1.4, -0.8, 0]} rotation={[0, -Math.PI / 4, 0]} />
+          <Avatar 
+            scale={isMobile ? 0.6 : 0.9} 
+            position={isMobile ? [0.3, -0.6, 0] : [1.4, -0.8, 0]} 
+            rotation={[0, isMobile ? -Math.PI / 12 : -Math.PI / 4, 0]} 
+          />
         </Suspense>
       </Canvas>
       
@@ -79,7 +96,7 @@ export default function AvatarCanvas() {
           const opacity = age > fadeStart ? 1 - ((age - fadeStart) / 1500) : 1
           
           return (
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div key={message.id} style={{ display: "flex", alignItems: "center" }}>
               {/* Decorative line on the left side of message */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -94,7 +111,6 @@ export default function AvatarCanvas() {
                 }}
               />
               <motion.div
-                key={message.id}
                 initial={{ opacity: 0, y: 20, scale: 0.8 }}
                 animate={{ opacity: opacity, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -20, scale: 0.8 }}
@@ -130,14 +146,14 @@ export default function AvatarCanvas() {
       <div 
         style={{ 
           position: "absolute", 
-          left: 40, 
+          left: isMobile ? 10 : 40, 
           top: "50%", 
           transform: "translateY(-50%)", 
           zIndex: 1000,
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
-          gap: "20px"
+          gap: isMobile ? "15px" : "20px"
         }}
       >
         

@@ -26,8 +26,8 @@ export default function AnimationDebugger() {
         onClick={() => setIsVisible(true)}
         style={{
           position: "fixed",
-          top: 10,
-          left: 10,
+          bottom: 23,
+          left: 65,
           zIndex: 1000,
           padding: "4px 8px",
           fontSize: "12px",
@@ -45,7 +45,7 @@ export default function AnimationDebugger() {
   }
 
   return (
-    <div style={{ position: "fixed", top: 10, left: 10, zIndex: 1000 }}>
+    <div style={{ position: "fixed", bottom: 20, left: 20, zIndex: 1000 }}>
       <div className="p-4 bg-yellow-100 border border-yellow-300 rounded-lg max-w-sm">
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-bold">Animation Debugger</h3>
