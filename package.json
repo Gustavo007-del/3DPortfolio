@@ -1,0 +1,29 @@
+{
+  "name": "shijil-portfolio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^16.1.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "@react-three/fiber": "^9.1.0",
+    "@react-three/drei": "^9.116.2",
+    "three": "^0.174.0",
+    "framer-motion": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.174.0",
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.4.0"
+  }
+}
