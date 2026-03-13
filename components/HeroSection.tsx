@@ -1,12 +1,13 @@
 "use client"
 import dynamic from "next/dynamic"
 import { motion } from "framer-motion"
+import { currentColor } from "../config/colors"
 
 // Critical fix for Next.js 16 + R3F: never SSR the 3D canvas
 const AvatarCanvas = dynamic(() => import("./AvatarCanvas"), {
   ssr: false,
   loading: () => (
-    <div style={{ position: "absolute", inset: 0, background: "#020617" }} />
+    <div style={{ position: "absolute", inset: 0, background: currentColor }} />
   ),
 })
 

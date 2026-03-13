@@ -93,7 +93,7 @@ export function AnimationProvider({ children, ...props }: { children: React.Reac
     if (animations && animations.length > 0) {
       // If it's Call_Me_Clean, play it at slow speed
       if (animations[0].name === "Call_Me_Clean") {
-        playAnimation(animations[0].name, { loop: false, speed: 0.8 })
+        playAnimation(animations[0].name, { loop: true, speed: 0.8 })
       } else {
         playAnimation(animations[0].name)
       }
