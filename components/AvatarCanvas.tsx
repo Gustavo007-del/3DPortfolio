@@ -195,7 +195,7 @@ export default function AvatarCanvas() {
             fontFamily: "monospace"
           }}
         >
-          how is this kochu
+          Click to Msg
         </motion.div>
         
         {/* Cool floating elements */}
