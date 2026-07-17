@@ -10,21 +10,21 @@ const START = {
   target: [-4.088, 5.949, -1.996] as const,
 };
 // Distance from camera to target — this is what gets locked
-const LOCKED_DISTANCE = new THREE.Vector3(...START.position).distanceTo(
-  new THREE.Vector3(...START.target)
-);
+// const LOCKED_DISTANCE = new THREE.Vector3(...START.position).distanceTo(
+//   new THREE.Vector3(...START.target)
+// );
 export default function CameraController() {
   const controls = useRef<CameraControls>(null);
 
   useEffect(() => {
-    if (controls.current) {
-      controls.current.minDistance = LOCKED_DISTANCE;
-      controls.current.maxDistance = LOCKED_DISTANCE;
+    // if (controls.current) {
+    //   controls.current.minDistance = LOCKED_DISTANCE;
+    //   controls.current.maxDistance = LOCKED_DISTANCE;
 
-      // Belt-and-suspenders: also kill wheel/pinch dolly input directly
-      controls.current.mouseButtons.wheel = 0; // ACTION.NONE
-      controls.current.touches.two = 0;        // ACTION.NONE
-    }
+    //   // Belt-and-suspenders: also kill wheel/pinch dolly input directly
+    //   controls.current.mouseButtons.wheel = 0; // ACTION.NONE
+    //   controls.current.touches.two = 0;        // ACTION.NONE
+    // }
 
     controls.current?.setLookAt(
       START.position[0],

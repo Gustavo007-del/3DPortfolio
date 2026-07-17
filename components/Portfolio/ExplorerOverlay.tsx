@@ -4,17 +4,20 @@
 import styles from "./ExplorerOverlay.module.css";
 import { profile, compassPoints, skills, projects, SECTIONS } from "@/lib/portfolioData";
 
-// 5 sections spread evenly across the scroll range, centers at 0.1..0.9
-const CENTERS = [0.1, 0.3, 0.5, 0.7, 0.9];
-const HALF_WIDTH = 0.11;
+// 5 sections spread evenly across the FULL scroll range: first section's
+// center sits at progress=0, last section's center sits at progress=1, so
+// Hero is fully opaque before any scrolling happens and Contact is fully
+// opaque at the very bottom — instead of both being clipped at the edges.
+const CENTERS = SECTIONS.map((_, i) => i / (SECTIONS.length - 1));
+const HALF_WIDTH = 0.22; // wide enough that adjacent panels overlap smoothly, no dead gaps
 
 function panelStyle(progress: number, index: number, rotate: number): React.CSSProperties {
-  const t = Math.max(-1, Math.min(1, (progress - CENTERS[index]) / HALF_WIDTH));
-  const opacity = 1 - Math.abs(t);
-  const translateY = t * 36;
+  const t = (progress - CENTERS[index]) / HALF_WIDTH;
+  const opacity = Math.max(0, 1 - Math.abs(t));
+  const translateY = Math.max(-1, Math.min(1, t)) * 36;
   return {
-    opacity: Math.max(0, opacity),
-    transform: `translateY(${translateY}px) rotate(${opacity > 0.05 ? rotate : rotate}deg)`,
+    opacity,
+    transform: `translateY(${translateY}px) rotate(${rotate}deg)`,
   };
 }
 
