@@ -30,11 +30,11 @@ function FloatingOrbit({ children, radius, speed, yOffset, startAngle = 0 }: {
 export default function FloatingModels() {
   return (
     <>
-      {/* <FloatingOrbit radius={14} speed={0.15} yOffset={2} startAngle={0}>
+      <FloatingOrbit radius={14} speed={0.15} yOffset={2} startAngle={0}>
         <group scale={0.8}>
           <CarModel />
         </group>
-      </FloatingOrbit> */}
+      </FloatingOrbit>
 
       <FloatingOrbit radius={18} speed={-0.1} yOffset={-3} startAngle={Math.PI / 2}>
         <group scale={0.6}>

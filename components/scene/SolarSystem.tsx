@@ -20,7 +20,6 @@ export default function SolarSystem() {
       <Nebula />
       <StarField />
 
-      <FloatingModels />
     </>
   );
 }
