@@ -8,16 +8,29 @@ import { profile, compassPoints, skills, projects, SECTIONS } from "@/lib/portfo
 // center sits at progress=0, last section's center sits at progress=1, so
 // Hero is fully opaque before any scrolling happens and Contact is fully
 // opaque at the very bottom — instead of both being clipped at the edges.
-const CENTERS = SECTIONS.map((_, i) => i / (SECTIONS.length - 1));
-const HALF_WIDTH = 0.22; // wide enough that adjacent panels overlap smoothly, no dead gaps
+const ACTIVE_SECTION = (progress: number) =>
+  Math.min(
+    SECTIONS.length - 1,
+    Math.round(progress * (SECTIONS.length - 1))
+  );
 
-function panelStyle(progress: number, index: number, rotate: number): React.CSSProperties {
-  const t = (progress - CENTERS[index]) / HALF_WIDTH;
-  const opacity = Math.max(0, 1 - Math.abs(t));
-  const translateY = Math.max(-1, Math.min(1, t)) * 36;
+function panelStyle(
+  progress: number,
+  index: number,
+  rotate: number
+): React.CSSProperties {
+  const active = ACTIVE_SECTION(progress);
+
+  const visible = active === index;
+
   return {
-    opacity,
-    transform: `translateY(${translateY}px) rotate(${rotate}deg)`,
+    opacity: visible ? 1 : 0,
+    visibility: visible ? "visible" : "hidden",
+    transform: visible
+      ? `translateY(0px) rotate(${rotate}deg)`
+      : `translateY(30px) rotate(${rotate}deg)`,
+    transition:
+      "opacity .55s ease, transform .55s ease, visibility .55s",
   };
 }
 
@@ -30,7 +43,7 @@ export default function ExplorerOverlay({ progress }: { progress: number }) {
         <h1 className={styles.heroTitle}>{profile.name}</h1>
         <p className={styles.heroRole}>{profile.role}</p>
         <p className={styles.heroTagline}>{profile.tagline}</p>
-        <p className={styles.scrollPrompt} style={{ opacity: progress < 0.04 ? 1 : 0 }}>
+        <p className={styles.scrollPrompt} style={{opacity:progress<0.12?1:0,transition:"opacity .5s"}}>
           ↓ scroll to begin the expedition
         </p>
       </section>

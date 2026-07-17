@@ -18,7 +18,7 @@
 .panel {
   position: fixed;
   z-index: 20;
-  max-width: 420px;
+  max-width: 560px;
   padding: 28px 30px;
   background:
     radial-gradient(circle at 20% 15%, rgba(255,255,255,0.25), transparent 40%),
@@ -56,8 +56,8 @@
 }
 
 .bodyText {
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.85;
   margin: 0 0 12px;
   color: var(--ink);
 }

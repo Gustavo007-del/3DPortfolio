@@ -5,7 +5,6 @@ import EarthOrbit from "../orbits/EarthOrbit";
 import PostProcessing from "../effects/PostProcessing";
 import StarField from "../stars/StarField";
 import Nebula from "../effects/Nebula";
-import FloatingModels from "./FloatingModels";
 
 export default function SolarSystem() {
   return (
