@@ -6,11 +6,12 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { JOURNEY_STOPS } from "@/lib/journey";
+import { JOURNEY_STOPS,JourneyStop, } from "@/lib/journey";
 export type JourneyContextType = {
   started: boolean;
   currentIndex: number;
-
+  currentStop: JourneyStop;
+   totalStops: number;
   beginJourney: () => void;
 
   next: () => void;
@@ -41,12 +42,15 @@ export function JourneyProvider({
   function previous() {
     setCurrentIndex((i) => Math.max(i - 1, 0));
   }
-
+const currentStop = JOURNEY_STOPS[currentIndex];
+const totalStops = JOURNEY_STOPS.length;
   return (
     <JourneyContext.Provider
       value={{
         started,
         currentIndex,
+        currentStop,
+        totalStops,
         beginJourney,
         next,
         previous,

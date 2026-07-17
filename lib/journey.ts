@@ -26,12 +26,11 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     subtitle: "Welcome to my island.",
 
     camera: {
-      position: [11.873, 10.369, 2.485],
-      lookAt: [0, 5, 0],
-
-      duration: 4,
-      lift: 5,
-    },
+  position: [36.067, 21.267, 43.493],
+  lookAt: [0.000, 5.000, 0.000],
+  duration: 4,
+  lift: 5,
+},
   },
 
   {
@@ -40,7 +39,7 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     subtitle: "Cross the ancient bridge.",
 
     camera: {
-      position: [0, 0, 0],
+      position: [0, 30, 0],
       lookAt: [0, 0, 0],
 
       duration: 4,

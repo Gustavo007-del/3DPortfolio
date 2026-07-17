@@ -8,7 +8,7 @@ import IslandScene from "@/components/Island/IslandScene";
 import JourneyCamera from "@/components/Journey/JourneyCamera";
 import JourneyUI from "@/components/Journey/JourneyUI";
 import { JourneyProvider } from "@/components/Journey/JourneyProvider";
-
+import CameraDebug from "@/components/Journey/CameraDebug";
 const Leva = dynamic(
   () => import("leva").then((m) => m.Leva),
   {
@@ -39,6 +39,8 @@ export default function Page() {
         <JourneyUI />
 
         <Leva hidden />
+          <CameraDebug />
+
       </div>
     </JourneyProvider>
   );

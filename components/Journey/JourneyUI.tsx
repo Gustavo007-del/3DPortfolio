@@ -1,18 +1,17 @@
 "use client";
 
-import { JOURNEY_STOPS } from "@/lib/journey";
 import { useJourney } from "./JourneyProvider";
 
 export default function JourneyUI() {
   const {
-    started,
-    currentIndex,
-    beginJourney,
-    next,
-    previous,
-  } = useJourney();
-
-  const stop = JOURNEY_STOPS[currentIndex];
+  started,
+  currentIndex,
+  currentStop,
+  totalStops,
+  beginJourney,
+  next,
+  previous,
+} = useJourney();
 
   return (
     <div
@@ -104,7 +103,7 @@ export default function JourneyUI() {
                 letterSpacing: "0.04em",
               }}
             >
-              {stop.title}
+              {currentStop.title}
             </h2>
 
             <p
@@ -114,7 +113,7 @@ export default function JourneyUI() {
                 fontSize: "1rem",
               }}
             >
-              {stop.subtitle}
+              {currentStop.subtitle}
             </p>
           </div>
 
@@ -151,19 +150,19 @@ export default function JourneyUI() {
 
             <button
               onClick={next}
-              disabled={currentIndex === JOURNEY_STOPS.length - 1}
+              disabled={currentIndex === totalStops - 1}
               style={{
                 background: "transparent",
                 border: "none",
                 color:
-                  currentIndex === JOURNEY_STOPS.length - 1
+                  currentIndex === totalStops - 1
                     ? "rgba(255,255,255,0.25)"
                     : "rgba(255,255,255,0.9)",
                 fontSize: "1rem",
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
                 cursor:
-                  currentIndex === JOURNEY_STOPS.length - 1
+                  currentIndex === totalStops - 1
                     ? "default"
                     : "pointer",
               }}
