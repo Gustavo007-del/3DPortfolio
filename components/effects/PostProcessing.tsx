@@ -7,15 +7,15 @@ export default function PostProcessing() {
   return (
     <EffectComposer>
       <Bloom
-        intensity={1.5}
+        intensity={0.1}
         luminanceThreshold={0.1}
         luminanceSmoothing={0.9}
-        mipmapBlur
+        // mipmapBlur
       />
-      <ChromaticAberration
+      {/* <ChromaticAberration
         blendFunction={BlendFunction.NORMAL}
-        offset={[0.002, 0.002]}
-      />
+        offset={[0.001, 0.001]}
+      /> */}
     </EffectComposer>
   );
 }

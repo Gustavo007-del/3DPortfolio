@@ -17,9 +17,9 @@ export default function MountainController({ meshes }: MountainControllerProps) 
   const { darkness, tintColor, roughness, envMapIntensity } = useControls(
     "Mountain Shading",
     {
-      darkness: { value: 0.45, min: 0, max: 1, step: 0.01 }, // 0 = untouched, 1 = full tint
-      tintColor: "#141a10",
-      roughness: { value: 0.95, min: 0, max: 1, step: 0.01 },
+      darkness: { value: 1, min: 0, max: 1, step: 0.01 }, // 0 = untouched, 1 = full tint
+      tintColor: "#696040",
+      roughness: { value: 0.83, min: 0, max: 1, step: 0.01 },
       envMapIntensity: { value: 0.25, min: 0, max: 2, step: 0.01 },
     }
   );

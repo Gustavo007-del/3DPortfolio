@@ -20,7 +20,7 @@ export default function LightDebugHelper({
   // Two lights both naming this folder "Debug" is exactly what merges
   // their toggles (and boxes) into a single shared control.
   const { showHelper } = useControls(label, {
-    showHelper: true,
+    showHelper: false,
   });
 
   useEffect(() => {

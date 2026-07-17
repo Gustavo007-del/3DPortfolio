@@ -133,7 +133,7 @@ export default function WaterPlaneController() {
     patternEnabled: true,
 
     waveHeightScale: {
-      value: 1,
+      value: .20,
       min: 0,
       max: 3,
       step: 0.05,
@@ -147,7 +147,7 @@ export default function WaterPlaneController() {
     },
 
     waveSpeedScale: {
-      value: 0.6,
+      value: 0.78,
       min: 0,
       max: 3,
       step: 0.02,

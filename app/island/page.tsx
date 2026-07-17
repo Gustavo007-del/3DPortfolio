@@ -13,6 +13,7 @@ import GradientSkyController from "@/components/Island/GradientSkyController";
 import SceneAtmosphereController from "@/components/Island/SceneAtmosphereController";
 import WaterPlaneController from "@/components/Island/WaterPlaneController";
 import MountainController from "@/components/Island/MountainController";
+import CameraDebugPanel from "@/components/Island/CameraDebugPanel";
 
 const Leva = dynamic(() => import("leva").then((mod) => mod.Leva), {
   ssr: false,
@@ -156,6 +157,15 @@ function Mountain({
 
 export default function Page() {
   const [rockMeshes, setRockMeshes] = useState<THREE.Mesh[]>([]);
+  const [showLeva, setShowLeva] = useState(false);
+
+useEffect(() => {
+  const handler = (e: KeyboardEvent) => {
+    if (e.key === "m" && e.ctrlKey) setShowLeva((v) => !v);
+  };
+  window.addEventListener("keydown", handler);
+  return () => window.removeEventListener("keydown", handler);
+}, []);
 
   return (
     <>
@@ -182,7 +192,8 @@ export default function Page() {
       </Canvas>
 
       <CameraInspector />
-      <Leva collapsed={false} oneLineLabels={false} />
-    </>
+      <CameraDebugPanel />
+
+    <Leva collapsed={false} oneLineLabels={false} hidden={!showLeva} />    </>
   );
 }

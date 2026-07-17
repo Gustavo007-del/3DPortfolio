@@ -65,9 +65,9 @@ export default function LightController() {
   });
 
   const { showGizmo, showTargetGizmo, showDirectionArrow } = useControls("Key Light Debug", {
-    showGizmo: true,
-    showTargetGizmo: true,
-    showDirectionArrow: true,
+    showGizmo: false,
+    showTargetGizmo: false,
+    showDirectionArrow: false,
   });
 
   useEffect(() => {

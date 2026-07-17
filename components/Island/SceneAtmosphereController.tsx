@@ -15,9 +15,9 @@ export default function SceneAtmosphereController() {
   });
 
   const { fogColor, fogNear, fogFar } = useControls("Fog", {
-    fogColor: "#e8a865",
-    fogNear: { value: 200, min: 0, max: 1000, step: 10 },
-    fogFar: { value: 1200, min: 100, max: 3000, step: 10 },
+    fogColor: "#4e2f0e",
+    fogNear: { value: 210, min: 0, max: 1000, step: 10 },
+    fogFar: { value: 790, min: 100, max: 3000, step: 10 },
   });
 
   const { exposure } = useControls("Exposure", {

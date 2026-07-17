@@ -6,7 +6,7 @@ import { useFrame } from "@react-three/fiber";
 
 export default function Nebula() {
   const meshRef = useRef<THREE.Points>(null);
-  const count = 2000;
+  const count = 5000;
 
   const positions = useMemo(() => new Float32Array(count * 3), []);
   const colors = useMemo(() => new Float32Array(count * 3), []);
@@ -62,14 +62,15 @@ export default function Nebula() {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.3}
-        vertexColors
-        transparent
-        opacity={0.4}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-        sizeAttenuation
-      />
+  size={0.02}
+  vertexColors
+  transparent
+  opacity={0.28}
+  blending={THREE.AdditiveBlending}
+  depthWrite={false}
+  alphaTest={0.01}
+  sizeAttenuation
+/>
     </points>
   );
 }

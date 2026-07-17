@@ -15,12 +15,12 @@ export default function CameraInspector() {
         const dbg = (window as any).__cameraDebug;
 
         dbg.controls.setLookAt(
-          -35.104,
-          21.394,
-          24.717,
-          -0.954,
-          5.248,
-          -10.579,
+          -44.334,
+          35.054,
+          24.049,
+          -4.088,
+          5.949,
+          -1.996,
           true
         );
       }}
