@@ -39,12 +39,11 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     subtitle: "Cross the ancient bridge.",
 
     camera: {
-      position: [0, 30, 0],
-      lookAt: [0, 0, 0],
-
-      duration: 4,
-      lift: 5,
-    },
+  position: [-0.363, 6.424, 41.742],
+  lookAt: [0.054, 5.107, -0.003],
+  duration: 4,
+  lift: 5,
+},
   },
 
   {
@@ -53,12 +52,11 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     subtitle: "The fortress gate.",
 
     camera: {
-      position: [0, 0, 0],
-      lookAt: [0, 0, 0],
-
-      duration: 4,
-      lift: 5,
-    },
+  position: [0.266, 11.133, 16.759],
+  lookAt: [0.271, 8.677, -0.835],
+  duration: 4,
+  lift: 5,
+},
   },
 
   {
@@ -67,12 +65,11 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     subtitle: "Inside the castle courtyard.",
 
     camera: {
-      position: [0, 0, 0],
-      lookAt: [0, 0, 0],
-
-      duration: 4,
-      lift: 5,
-    },
+  position: [-0.189, 9.800, -1.334],
+  lookAt: [-0.189, 9.800, -1.336],
+  duration: 4,
+  lift: 5,
+},
   },
 
   {
@@ -81,11 +78,10 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     subtitle: "Reach the highest tower.",
 
     camera: {
-      position: [0, 0, 0],
-      lookAt: [0, 0, 0],
-
-      duration: 4,
-      lift: 5,
-    },
+  position: [-18.763, 35.741, -3.020],
+  lookAt: [-3.093, 13.642, -15.119],
+  duration: 4,
+  lift: 5,
+},
   },
 ];
