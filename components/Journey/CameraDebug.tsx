@@ -14,7 +14,7 @@ type CameraState = {
 };
 
 export default function CameraDebug() {
-  const { currentStop } = useJourney();
+  const { currentStop,cameraState, } = useJourney();
 
   const [camera, setCamera] = useState<CameraState | null>(null);
 
@@ -84,6 +84,33 @@ export default function CameraDebug() {
       >
         Camera Debug
       </div>
+
+      <div
+  style={{
+    marginBottom: 12,
+  }}
+>
+  <div
+    style={{
+      color: "#999",
+      fontSize: 11,
+      textTransform: "uppercase",
+      letterSpacing: "0.15em",
+    }}
+  >
+    Camera State
+  </div>
+
+  <div
+    style={{
+      color: "#6ee7b7",
+      fontWeight: 600,
+      marginTop: 4,
+    }}
+  >
+    {cameraState}
+  </div>
+</div>
 
       <div
         style={{

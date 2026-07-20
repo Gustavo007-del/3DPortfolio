@@ -1,15 +1,12 @@
 // lib/journey.ts
-
+import { TransitionSettings } from "./JourneyTransition";
 export type Vec3 = [number, number, number];
 
 export interface JourneyCameraSettings {
   position: Vec3;
   lookAt: Vec3;
-
-  // Cinematic settings
-  duration: number;
-  lift: number;
 }
+
 
 export interface JourneyStop {
   id: string;
@@ -17,6 +14,7 @@ export interface JourneyStop {
   subtitle: string;
 
   camera: JourneyCameraSettings;
+  transition: TransitionSettings;
 }
 
 export const JOURNEY_STOPS: JourneyStop[] = [
@@ -28,9 +26,15 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     camera: {
   position: [36.067, 21.267, 43.493],
   lookAt: [0.000, 5.000, 0.000],
-  duration: 4,
-  lift: 5,
+  
 },
+transition: {
+  duration: 2,
+  lift: 2,
+  smoothTime: .6,
+  arrivalDelay: 0.3,
+  chapterDelay: .2
+  }
   },
 
   {
@@ -41,9 +45,15 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     camera: {
   position: [-0.363, 6.424, 41.742],
   lookAt: [0.054, 5.107, -0.003],
+  
+},
+transition: {
   duration: 4,
   lift: 5,
-},
+  smoothTime: 1.6,
+  arrivalDelay: 0.3,
+  chapterDelay: .2,
+  }
   },
 
   {
@@ -54,9 +64,15 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     camera: {
   position: [0.266, 11.133, 16.759],
   lookAt: [0.271, 8.677, -0.835],
+  
+},
+transition: {
   duration: 4,
   lift: 5,
-},
+  smoothTime: 1.6,
+  arrivalDelay: 0.3,
+  chapterDelay: .2,
+  }
   },
 
   {
@@ -67,9 +83,16 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     camera: {
   position: [-0.189, 9.800, -1.334],
   lookAt: [-0.189, 9.800, -1.336],
+  
+},
+transition: {
   duration: 4,
   lift: 5,
-},
+  smoothTime: 1.6,
+  arrivalDelay: 0.3,
+  chapterDelay: .2
+  }
+
   },
 
   {
@@ -80,8 +103,13 @@ export const JOURNEY_STOPS: JourneyStop[] = [
     camera: {
   position: [-18.763, 35.741, -3.020],
   lookAt: [-3.093, 13.642, -15.119],
-  duration: 4,
-  lift: 5,
 },
+transition: {
+  duration: 4,
+    lift: 5,
+    smoothTime: 1.6,
+    arrivalDelay: 0.3,
+    chapterDelay: .2
+  }
   },
 ];
