@@ -4,14 +4,16 @@ import * as THREE from "three";
 import { useEffect, useState } from "react";
 import { useGLTF } from "@react-three/drei";
 import gsap from "gsap";
-
+import Mist from "@/components/fire/Mist";
 import GradientSkyController from "./GradientSkyController";
 import SceneAtmosphereController from "./SceneAtmosphereController";
 import LightController from "./LightController";
 import FillLightController from "./OppositeLightController";
 import MountainController from "./MountainController";
 import WaterPlaneController from "./WaterPlaneController";
-
+import Fireflies from "@/components/fire/Fireflies";
+import CloudLayer from "@/components/fire/CloudLayer";
+import MistController from "@/components/fire/MistController";
 function Mountain({
   onRocksReady,
 }: {
@@ -93,6 +95,8 @@ export default function IslandScene() {
       <GradientSkyController />
 
       <SceneAtmosphereController />
+      {/* <CloudLayer /> */}
+
 
       <LightController />
 
@@ -103,6 +107,8 @@ export default function IslandScene() {
       <MountainController meshes={rocks} />
 
       <WaterPlaneController />
+      <MistController />
+      <Fireflies count={250} radius={220} height={35}/>
     </>
   );
 }

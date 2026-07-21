@@ -10,7 +10,7 @@ import JourneyUI from "@/components/Journey/JourneyUI";
 import { JourneyProvider } from "@/components/Journey/JourneyProvider";
 import CameraDebug from "@/components/Journey/CameraDebug";
 import ChapterPanel from "@/components/Journey/ChapterPanel";
-
+import { WindProvider } from "@/components/fire/WindContext";
 const Leva = dynamic(
   () => import("leva").then((m) => m.Leva),
   {
@@ -34,12 +34,14 @@ export default function Page() {
             toneMappingExposure: 1.1,
           }}
         >
+          <WindProvider>
           <IslandScene />
           <JourneyCamera />
+          </WindProvider>
         </Canvas>
         <JourneyUI />
 
-        <Leva hidden />
+        <Leva hidden={false} />
           <ChapterPanel />
           <CameraDebug />
 
