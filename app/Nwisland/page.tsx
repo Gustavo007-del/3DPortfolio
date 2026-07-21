@@ -41,9 +41,9 @@ export default function Page() {
         </Canvas>
         <JourneyUI />
 
-        <Leva hidden={false} />
+        <Leva hidden />
           <ChapterPanel />
-          <CameraDebug />
+          {/* <CameraDebug /> */}
 
       </div>
     </JourneyProvider>
