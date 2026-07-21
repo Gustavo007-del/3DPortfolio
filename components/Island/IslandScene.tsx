@@ -11,7 +11,7 @@ import LightController from "./LightController";
 import FillLightController from "./OppositeLightController";
 import MountainController from "./MountainController";
 import WaterPlaneController from "./WaterPlaneController";
-import Fireflies from "@/components/fire/Fireflies";
+import FireflyController from "@/components/fire/FireflyController";
 import CloudLayer from "@/components/fire/CloudLayer";
 import MistController from "@/components/fire/MistController";
 function Mountain({
@@ -108,7 +108,6 @@ export default function IslandScene() {
 
       <WaterPlaneController />
       <MistController />
-      <Fireflies count={250} radius={220} height={35}/>
-    </>
+<FireflyController />    </>
   );
 }
