@@ -149,21 +149,28 @@ export default function JourneyCamera() {
     void transitionToStop();
   }, [started, currentStop]);
 
-  useFrame(({ camera }) => {
-    const target =
-      controls.current?.getTarget(new THREE.Vector3());
+  const frameCount = useRef(0);
 
-    (window as any).__cameraDebug = {
-      px: camera.position.x.toFixed(3),
-      py: camera.position.y.toFixed(3),
-      pz: camera.position.z.toFixed(3),
+useFrame(({ camera }) => {
+  frameCount.current++;
+  // if (frameCount.current % 60 === 0) {
+  //   console.log('[JourneyCamera:heartbeat]', frameCount.current, camera.position.toArray());
+  // }
 
-      tx: target?.x.toFixed(3),
-      ty: target?.y.toFixed(3),
-      tz: target?.z.toFixed(3),
-    };
-  });
+  const target = controls.current?.getTarget(new THREE.Vector3());
 
+  const posBad = !Number.isFinite(camera.position.x) || !Number.isFinite(camera.position.y) || !Number.isFinite(camera.position.z);
+  const quatBad = !Number.isFinite(camera.quaternion.x) || !Number.isFinite(camera.quaternion.y) || !Number.isFinite(camera.quaternion.z) || !Number.isFinite(camera.quaternion.w);
+
+  if (posBad || quatBad) {
+    console.warn('[JourneyCamera:BAD_CAMERA]', { posBad, quatBad, pos: camera.position.toArray(), quat: camera.quaternion.toArray() });
+  }
+
+  (window as any).__cameraDebug = {
+    px: camera.position.x.toFixed(3), py: camera.position.y.toFixed(3), pz: camera.position.z.toFixed(3),
+    tx: target?.x.toFixed(3), ty: target?.y.toFixed(3), tz: target?.z.toFixed(3),
+  };
+});
   return (
     <CameraControls
       ref={controls}

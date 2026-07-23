@@ -169,7 +169,7 @@ export default function Page() {
 
           <Mountain onRocksReady={setRockMeshes} />
           <MountainController meshes={rockMeshes} />
-          <WaterPlaneController />
+          {/* <WaterPlaneController /> */}
 
           {/* Only ONE camera driver mounted at a time — they must never run together */}
           {mode === "story" && <ScrollCameraRig progressRef={progressRef} />}

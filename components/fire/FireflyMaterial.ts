@@ -4,7 +4,7 @@ import { extend } from '@react-three/fiber';
 import { Color, AdditiveBlending } from 'three';
 
 export const FireflyMaterial = shaderMaterial(
-  { uTime: 0, uColor: new Color('#ffb347'), uCoreColor: new Color('#fff6d5'), uWind: [0, 0, 0] },
+  { uTime: 0, uColor: new Color('#ffb347'), uCoreColor: new Color('#fff6d5'), uWind: [0, 0, 0], uSizeMult: 1, uBrightnessMult: 1 },
   /* vertex */ `
 attribute float aSize;
 attribute float aBlinkSpeed;
@@ -13,6 +13,7 @@ attribute float aBrightness;
 attribute float aSeed;
 uniform float uTime;
 uniform vec3 uWind;
+uniform float uSizeMult;
 varying float vFlicker;
 varying float vBrightness;
 varying vec2 vUv;
@@ -22,14 +23,15 @@ void main(){
   float blink=sin(uTime*aBlinkSpeed+aBlinkOffset)*0.5+0.5;
   float microFlicker=sin(uTime*(17.+aSeed*23.)+aSeed*6.2831)*0.15+0.85;
   vFlicker=pow(blink,1.8)*microFlicker;
-  vec4 mvPosition=modelViewMatrix*instanceMatrix*vec4(position*aSize,1.);
-  mvPosition.xyz+=uWind*aSize*0.3;
+  vec4 mvPosition=modelViewMatrix*instanceMatrix*vec4(position*aSize*uSizeMult,1.);
+  mvPosition.xyz+=uWind*aSize*uSizeMult*0.3;
   gl_Position=projectionMatrix*mvPosition;
 }
 `,
   /* fragment */ `
 uniform vec3 uColor;
 uniform vec3 uCoreColor;
+uniform float uBrightnessMult;
 varying float vFlicker;
 varying float vBrightness;
 varying vec2 vUv;
@@ -40,9 +42,10 @@ void main(){
   glow=pow(glow,2.2);
   float core=smoothstep(0.35,0.,d);
   vec3 col=mix(uColor,uCoreColor,core);
-  float alpha=glow*vFlicker*vBrightness;
+  float alpha=glow*vFlicker*vBrightness*uBrightnessMult;
   if(alpha<0.003)discard;
-  gl_FragColor=vec4(col*(1.+core*1.5),alpha);
+  vec3 finalColor=clamp(col*(1.+core*1.5),0.,1.);
+  gl_FragColor=vec4(finalColor,clamp(alpha,0.,1.));
 }
 `
 );

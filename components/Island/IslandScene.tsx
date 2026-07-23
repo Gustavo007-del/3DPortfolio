@@ -14,6 +14,10 @@ import WaterPlaneController from "./WaterPlaneController";
 import FireflyController from "@/components/fire/FireflyController";
 import CloudLayer from "@/components/fire/CloudLayer";
 import MistController from "@/components/fire/MistController";
+import BirdDebug from "@/components/birds/BirdDebug";
+import { ParticleController } from "@/components/Environment/ParticleEngine/ParticleController";
+
+
 function Mountain({
   onRocksReady,
 }: {
@@ -108,6 +112,10 @@ export default function IslandScene() {
 
       <WaterPlaneController />
       <MistController />
-<FireflyController />    </>
+      {/* <FireflyController />     */}
+       <BirdDebug />
+      <ParticleController debugEnabled={process.env.NODE_ENV==="development"} />
+
+</>
   );
 }
