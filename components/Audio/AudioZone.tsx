@@ -8,7 +8,7 @@ import * as THREE from "three";
 import { AudioZoneProps } from "./audioTypes";
 import { useAudioContext } from "./AudioProvider";
 
-export default function AudioZone({ position, radius, sound, bus = "Environment", fadeMs = 800, innerVolume = 1, falloff = 0.6 }: AudioZoneProps) {
+export default function AudioZone({ position, radius, sound, bus = "Environment", fadeMs = 800, innerVolume, falloff = 0.6 }: AudioZoneProps) {
   const { play, stop, ready } = useAudioContext();
   const inside = useRef(false);
   const frameSkip = useRef(0);

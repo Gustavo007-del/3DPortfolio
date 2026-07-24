@@ -11,6 +11,7 @@ export default function AudioZones() {
     <AudioZone position={[20,0,20]} radius={40} sound="wind" bus="Ambient" />
     <AudioZone position={[10,5,10]} radius={35} sound="birds" bus="Ambient" />
     <AudioZone position={[-15,0,-15]} radius={30} sound="insects" bus="Ambient" />
+    {/* <AudioZone position={[-15,0,-15]} radius={30} sound="bell" bus="Ambient" /> */}
     </>
   );
 }
