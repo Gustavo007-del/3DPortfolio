@@ -63,31 +63,7 @@ function Mountain({
 
     onRocksReady(rocks);
 
-    rocks.sort(
-      (a, b) =>
-        a.getWorldPosition(new THREE.Vector3()).x -
-        b.getWorldPosition(new THREE.Vector3()).x
-    );
-
-    rocks.forEach((rock, index) => {
-      const originalPos = rock.position.clone();
-      const originalRot = rock.rotation.clone();
-
-      const lift = THREE.MathUtils.randFloat(1.5, 3.5);
-      const rotX = THREE.MathUtils.degToRad(THREE.MathUtils.randFloatSpread(14));
-      const rotZ = THREE.MathUtils.degToRad(THREE.MathUtils.randFloatSpread(14));
-
-      const delay = index * 0.015 + Math.sin(index * 0.55) * 0.08 + Math.random() * 0.05;
-
-      const tl = gsap.timeline({ delay });
-
-      tl.to(rock.position, { y: originalPos.y - lift * 0.25, duration: 0.12, ease: "power1.in" }, 0);
-      tl.to(rock.rotation, { x: originalRot.x + rotX, z: originalRot.z + rotZ, duration: 0.18, ease: "power1.out" }, 0);
-      tl.to(rock.position, { y: originalPos.y + lift, duration: 0.35, ease: "power3.out" }, ">");
-      tl.to(rock.rotation, { x: originalRot.x, z: originalRot.z, duration: 0.35, ease: "power2.out" }, "<");
-      tl.to(rock.position, { y: originalPos.y, duration: 0.45, ease: "elastic.out(1, 0.55)" }, ">");
-    });
-  }, [scene, onRocksReady]);
+    }, [scene, onRocksReady]);
  return <primitive object={scene} />;
 }
 

@@ -1,3 +1,5 @@
+// solarsystem
+// \app\animate\page.tsx
 "use client";
 
 import { Canvas } from "@react-three/fiber";
