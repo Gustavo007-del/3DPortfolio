@@ -1,61 +1,41 @@
 // components/Audio/AudioSettings.ts
 
-import { AudioSettingsData } from "./audioTypes";
-import { DEFAULT_SETTINGS, STORAGE_KEY } from "./audioDefaults";
+import { AudioSettingsShape, BusName } from "./audioTypes";
+import { BUS_NAMES, DEFAULT_BUS_VOLUMES } from "./audioDefaults";
 
-/**
- * Handles persistence of audio settings to localStorage.
- * Provides load/save operations with automatic fallback to defaults.
- */
-export class AudioSettings {
-  private key: string;
+const STORAGE_KEY = "audio-settings-v1";
 
-  constructor(key: string = STORAGE_KEY) {
-    this.key = key;
-  }
+export function defaultAudioSettings(): AudioSettingsShape {
+  return { masterVolume: 1, muted: false, busVolumes: { ...DEFAULT_BUS_VOLUMES } };
+}
 
-  /** Load settings from localStorage, or return null if not found or invalid */
-  load(): AudioSettingsData | null {
-    try {
-      const stored = localStorage.getItem(this.key);
-      if (!stored) return null;
-      const data = JSON.parse(stored) as AudioSettingsData;
-      // Validate structure (basic)
-      if (typeof data.muted !== "boolean" || typeof data.masterVolume !== "number" || !data.busVolumes) {
-        return null;
-      }
-      return data;
-    } catch (_) {
-      return null;
-    }
-  }
+export function loadAudioSettings(): AudioSettingsShape | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.masterVolume !== "number" || typeof parsed.muted !== "boolean" || typeof parsed.busVolumes !== "object") return null;
+    const busVolumes = { ...DEFAULT_BUS_VOLUMES };
+    for (const name of BUS_NAMES) if (typeof parsed.busVolumes[name] === "number") busVolumes[name as BusName] = parsed.busVolumes[name];
+    return { masterVolume: parsed.masterVolume, muted: parsed.muted, busVolumes };
+  } catch { return null; }
+}
 
-  /** Load settings or return defaults if not found */
-  loadOrDefault(): AudioSettingsData {
-    const loaded = this.load();
-    return loaded ? loaded : { ...DEFAULT_SETTINGS };
-  }
+export function saveAudioSettings(partial: Partial<AudioSettingsShape>) {
+  if (typeof window === "undefined") return;
+  try {
+    const current = loadAudioSettings() ?? defaultAudioSettings();
+    const next: AudioSettingsShape = {
+      masterVolume: partial.masterVolume ?? current.masterVolume,
+      muted: partial.muted ?? current.muted,
+      busVolumes: partial.busVolumes ? { ...current.busVolumes, ...partial.busVolumes } : current.busVolumes
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {}
+}
 
-  /** Save settings to localStorage */
-  save(data: AudioSettingsData): void {
-    try {
-      localStorage.setItem(this.key, JSON.stringify(data));
-    } catch (_) {
-      // ignore (e.g., quota exceeded)
-    }
-  }
-
-  /** Reset to default settings and save */
-  reset(): AudioSettingsData {
-    const defaults = { ...DEFAULT_SETTINGS };
-    this.save(defaults);
-    return defaults;
-  }
-
-  /** Clear stored settings from localStorage */
-  clear(): void {
-    try {
-      localStorage.removeItem(this.key);
-    } catch (_) { /* ignore */ }
-  }
+export function clearAudioSettings() {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.removeItem(STORAGE_KEY); } catch {}
 }

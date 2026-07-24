@@ -1,77 +1,94 @@
 // components/Audio/audioTypes.ts
 
-import * as THREE from "three";
+export type BusName = "Master" | "Ambient" | "Environment" | "Effects" | "Music" | "Voice" | "UI";
 
-export type BusName =
-  | "Master"
-  | "Ambient"
-  | "Environment"
-  | "Effects"
-  | "Music"
-  | "Voice"
-  | "UI";
+export type FadeCurve = "linear" | "exponential";
 
-export type SoundId = string;
-export type Position = [number, number, number];
+export interface PositionalConfig {
+  refDistance: number;
+  maxDistance: number;
+  rolloffFactor: number;
+  coneInnerAngle: number;
+  coneOuterAngle: number;
+  coneOuterGain: number;
+}
+
+export interface SoundDefinition {
+  id: string;
+  bus: BusName;
+  src: string[];
+  loop: boolean;
+  baseVolume: number;
+  positional?: Partial<PositionalConfig>;
+  preload?: boolean;
+}
 
 export interface PlayOptions {
   bus?: BusName;
   loop?: boolean;
   volume?: number;
-  fadeIn?: number;
-  fadeOut?: number;
-  rate?: number;
-  offset?: number;
-  position?: Position;
-  refDistance?: number;
-  maxDistance?: number;
-  rolloff?: number;
-  coneInnerAngle?: number;
-  coneOuterAngle?: number;
-  coneOuterGain?: number;
+  fadeMs?: number;
+  position?: [number, number, number];
+  positional?: Partial<PositionalConfig>;
+  restartIfPlaying?: boolean;
 }
 
-export interface AudioHandle {
-  stop: (fadeOut?: number) => void;
-  pause: () => void;
-  resume: () => void;
-  isPlaying: boolean;
-  source: AudioBufferSourceNode | THREE.PositionalAudio | null;
-  gain: GainNode | null;
+export interface ActiveSound {
+  id: string;
+  instanceId: string;
+  source: AudioBufferSourceNode;
+  gain: GainNode;
+  panner: PannerNode | null;
+  bus: BusName;
+  loop: boolean;
+  startedAt: number;
 }
 
-export interface ZoneConfig {
-  sound: SoundId;
-  position: Position;
-  radius: number;
-  bus?: BusName;
-  volume?: number;
-  fadeIn?: number;
-  fadeOut?: number;
-  loop?: boolean;
-  id?: string;
-}
-
-export interface AudioSettingsData {
+export interface BusState {
+  name: BusName;
+  volume: number;
   muted: boolean;
+}
+
+export type BusGraph = Record<BusName, { input: GainNode; gain: GainNode }>;
+
+export interface AudioSettingsShape {
   masterVolume: number;
+  muted: boolean;
   busVolumes: Record<BusName, number>;
 }
 
-export interface AudioContextType {
-  play: (soundId: SoundId, options?: PlayOptions) => AudioHandle | null;
-  load: (soundId: SoundId) => Promise<AudioBuffer>; // <-- NEW
-  stopAll: (bus?: BusName) => void;
-  pauseAll: () => void;
-  resumeAll: () => void;
-  setMasterVolume: (volume: number) => void;
-  setBusVolume: (bus: BusName, volume: number) => void;
-  mute: (muted?: boolean) => void;
+export interface AudioZoneProps {
+  position: [number, number, number];
+  radius: number;
+  sound: string;
+  bus?: BusName;
+  fadeMs?: number;
+  innerVolume?: number;
+  falloff?: number;
+}
+
+export interface AudioContextValue {
+  play: (id: string, opts?: PlayOptions) => string | null;
+  stop: (id: string, fadeMs?: number) => void;
+  stopInstance: (instanceId: string, fadeMs?: number) => void;
+  pause: () => void;
+  resume: () => void;
+  fade: (busOrId: string, target: number, durationMs?: number) => void;
+  mute: () => void;
+  unmute: () => void;
   toggleMute: () => void;
+  setVolume: (value: number) => void;
+  setBusVolume: (bus: BusName, value: number, fadeMs?: number) => void;
   isMuted: boolean;
   masterVolume: number;
   busVolumes: Record<BusName, number>;
-  fadeMaster: (target: number, duration: number) => void;
-  fadeBus: (bus: BusName, target: number, duration: number) => void;
-  isReady: boolean;
+  ready: boolean;
+  unlock: () => Promise<void>;
+}
+
+export interface AudioDebugState {
+  showZones: boolean;
+  showRadius: boolean;
+  debugAudio: boolean;
 }

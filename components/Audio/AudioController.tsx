@@ -1,108 +1,33 @@
 // components/Audio/AudioController.tsx
 
-import { ReactNode, cloneElement, isValidElement } from "react";
-import { useAudio } from "./AudioProvider";
-import { SoundId, PlayOptions, AudioHandle, BusName } from "./audioTypes";
+"use client";
 
-/**
- * Convenience hook that extends the base audio API with
- * pre-configured play methods for common use cases.
- */
-export function useAudioController() {
-  const audio = useAudio();
+import { useEffect, useRef } from "react";
+import { useJourney } from "@/components/Journey/JourneyProvider";
+import { useAudioContext } from "./AudioProvider";
 
-  const playSound = (soundId: SoundId, options?: PlayOptions): AudioHandle | null => {
-    return audio.play(soundId, options);
-  };
+export default function AudioController() {
+  const { started, currentIndex, isTransitioning } = useJourney();
+  const { ready, unlock, fade } = useAudioContext();
+  const hasUnlocked = useRef(false);
+  const prevIndex = useRef(currentIndex);
+  const prevTransitioning = useRef(isTransitioning);
 
-  const playUISound = (soundId: SoundId, volume?: number): AudioHandle | null => {
-    return audio.play(soundId, { bus: "UI", volume, fadeIn: 0.05, fadeOut: 0.05 });
-  };
+  useEffect(() => {
+    if (started && !hasUnlocked.current) { hasUnlocked.current = true; void unlock(); }
+  }, [started, unlock]);
 
-  const playEffectSound = (
-    soundId: SoundId,
-    position?: [number, number, number],
-    volume?: number
-  ): AudioHandle | null => {
-    return audio.play(soundId, { bus: "Effects", position, volume, fadeIn: 0.1 });
-  };
+  useEffect(() => {
+    if (!ready) return;
+    if (isTransitioning && !prevTransitioning.current) fade("Ambient", 0.55, 400);
+    if (!isTransitioning && prevTransitioning.current) fade("Ambient", 1, 600);
+    prevTransitioning.current = isTransitioning;
+  }, [isTransitioning, ready, fade]);
 
-  const playAmbientSound = (
-    soundId: SoundId,
-    volume?: number,
-    loop: boolean = true
-  ): AudioHandle | null => {
-    return audio.play(soundId, { bus: "Ambient", loop, volume, fadeIn: 1 });
-  };
+  useEffect(() => {
+    if (!ready) return;
+    if (currentIndex !== prevIndex.current) prevIndex.current = currentIndex;
+  }, [currentIndex, ready]);
 
-  const playEnvironmentSound = (
-    soundId: SoundId,
-    position?: [number, number, number],
-    volume?: number,
-    loop: boolean = true
-  ): AudioHandle | null => {
-    return audio.play(soundId, { bus: "Environment", loop, position, volume, fadeIn: 0.5 });
-  };
-
-  const playVoice = (soundId: SoundId, volume?: number): AudioHandle | null => {
-    return audio.play(soundId, { bus: "Voice", volume, fadeIn: 0.2 });
-  };
-
-  const playMusic = (soundId: SoundId, volume?: number, loop: boolean = true): AudioHandle | null => {
-    return audio.play(soundId, { bus: "Music", loop, volume, fadeIn: 2 });
-  };
-
-  return {
-    ...audio,
-    playSound,
-    playUISound,
-    playEffectSound,
-    playAmbientSound,
-    playEnvironmentSound,
-    playVoice,
-    playMusic,
-  };
-}
-
-/**
- * Wraps a child element and plays a sound on interaction.
- */
-interface AudioTriggerProps {
-  sound: SoundId;
-  children: ReactNode;
-  bus?: BusName;
-  volume?: number;
-  on?: "click" | "hover" | "focus";
-  options?: PlayOptions;
-}
-
-export function AudioTrigger({
-  sound,
-  children,
-  bus = "UI",
-  volume = 0.8,
-  on = "click",
-  options = {},
-}: AudioTriggerProps) {
-  const { play } = useAudio();
-
-  const handleTrigger = () => {
-    play(sound, { bus, volume, ...options });
-  };
-
-  if (isValidElement(children)) {
-    const eventMap = {
-      click: { onClick: handleTrigger },
-      hover: { onMouseEnter: handleTrigger },
-      focus: { onFocus: handleTrigger },
-    };
-    const eventProps = eventMap[on] || eventMap.click;
-    // Merge existing props with new event handler
-    return cloneElement(children, {
-      ...eventProps,
-      // If the child already has the same event, we could chain or override; we override for simplicity.
-    });
-  }
-
-  return <span onClick={handleTrigger}>{children}</span>;
+  return null;
 }

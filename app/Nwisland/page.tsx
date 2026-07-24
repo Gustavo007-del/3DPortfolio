@@ -5,15 +5,17 @@ import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
 
 import IslandScene from "@/components/Island/IslandScene";
-import IslandAudio from "@/components/Island/IslandAudio";
+import { AudioProvider } from "@/components/Audio/AudioProvider";
+import AudioController from "@/components/Audio/AudioController";
+import AudioButton from "@/components/Audio/AudioButton";
+import AudioDebug from "@/components/Audio/AudioDebug";
 import JourneyCamera from "@/components/Journey/JourneyCamera";
 import JourneyUI from "@/components/Journey/JourneyUI";
 import { JourneyProvider } from "@/components/Journey/JourneyProvider";
 import CameraDebug from "@/components/Journey/CameraDebug";
 import ChapterPanel from "@/components/Journey/ChapterPanel";
 import { WindProvider } from "@/components/fire/WindContext";
-import { AudioProvider } from "@/components/Audio/AudioProvider";
-import AudioButton from "@/components/Audio/AudioButton";
+import AudioZones from "@/components/Island/AudioZones";
 
 const Leva = dynamic(
   () => import("leva").then((m) => m.Leva),
@@ -41,15 +43,17 @@ export default function Page() {
           >
             <WindProvider>
               <IslandScene />
+              <AudioZones />
               <JourneyCamera />
-              <IslandAudio />
             </WindProvider>
           </Canvas>
 
           <JourneyUI />
           <ChapterPanel />
           <AudioButton />
-          <Leva hidden={false} />
+          <AudioController />
+          <Leva hidden />
+          <AudioDebug />
           {/* <CameraDebug /> */}
         </div>
       </AudioProvider>

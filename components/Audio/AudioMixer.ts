@@ -1,152 +1,82 @@
 // components/Audio/AudioMixer.ts
 
-import { BusName } from "./audioTypes";
-import { DEFAULT_FADE_TIME } from "./audioDefaults";
+import { BusGraph, BusName, BusState } from "./audioTypes";
+import { BUS_NAMES, DEFAULT_BUS_VOLUMES } from "./audioDefaults";
 
-/**
- * Professional audio mixer with per-bus gain staging.
- * Routes all sources through bus gains then master gain to destination.
- * Supports volume, mute, and smooth fades for each bus and master.
- */
 export class AudioMixer {
   private ctx: AudioContext;
-  private masterGain: GainNode;
-  private busGains: Map<BusName, GainNode>;
-  private busVolumes: Map<BusName, number>;
-  private masterVolume: number;
-  private isMuted: boolean;
+  private master: GainNode;
+  private buses: BusGraph = {} as BusGraph;
+  private state: Record<BusName, BusState> = {} as Record<BusName, BusState>;
+  private duckTimers: Map<BusName, number> = new Map();
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
-    this.masterGain = ctx.createGain();
-    this.masterGain.gain.value = 1;
-    this.masterGain.connect(ctx.destination);
+    this.master = ctx.createGain();
+    this.master.gain.value = DEFAULT_BUS_VOLUMES.Master;
+    this.master.connect(ctx.destination);
 
-    this.busGains = new Map();
-    this.busVolumes = new Map();
-    this.isMuted = false;
-    this.masterVolume = 1;
-
-    // Create bus gains for all known buses
-    const busNames: BusName[] = ["Master", "Ambient", "Environment", "Effects", "Music", "Voice", "UI"];
-    for (const name of busNames) {
+    for (const name of BUS_NAMES) {
+      if (name === "Master") { this.state.Master = { name, volume: DEFAULT_BUS_VOLUMES.Master, muted: false }; continue; }
+      const input = ctx.createGain();
       const gain = ctx.createGain();
-      gain.gain.value = 1;
-      gain.connect(this.masterGain);
-      this.busGains.set(name, gain);
-      this.busVolumes.set(name, 1);
+      gain.gain.value = DEFAULT_BUS_VOLUMES[name];
+      input.connect(gain);
+      gain.connect(this.master);
+      this.buses[name] = { input, gain };
+      this.state[name] = { name, volume: DEFAULT_BUS_VOLUMES[name], muted: false };
     }
   }
 
-  /** Connect a source node to the specified bus gain */
-  connectSource(source: AudioNode, bus: BusName): void {
-    const gain = this.busGains.get(bus);
-    if (!gain) throw new Error(`Unknown bus: ${bus}`);
-    source.connect(gain);
+  getBusInput(bus: BusName): GainNode { return bus === "Master" ? this.master : this.buses[bus].input; }
+  getBusState(bus: BusName): BusState { return this.state[bus]; }
+  getAllBusVolumes(): Record<BusName, number> { const out = {} as Record<BusName, number>; for (const n of BUS_NAMES) out[n] = this.state[n].volume; return out; }
+
+  private rampNode(node: GainNode, target: number, fadeMs: number) {
+  const now = this.ctx.currentTime;
+  const clamped = Math.max(0, target);
+  node.gain.cancelScheduledValues(now);
+  node.gain.setValueAtTime(node.gain.value, now);
+  if (fadeMs <= 0) { node.gain.setValueAtTime(clamped, now); return; }
+  node.gain.linearRampToValueAtTime(clamped, now + fadeMs / 1000);
+}
+
+  setBusVolume(bus: BusName, value: number, fadeMs = 0) {
+    const v = Math.min(1, Math.max(0, value));
+    this.state[bus].volume = v;
+    const node = bus === "Master" ? this.master : this.buses[bus].gain;
+    const effective = this.state[bus].muted ? 0 : v;
+    this.rampNode(node, effective, fadeMs);
   }
 
-  /** Get the gain node for a bus (for direct connection) */
-  getBusGain(bus: BusName): GainNode {
-    const gain = this.busGains.get(bus);
-    if (!gain) throw new Error(`Unknown bus: ${bus}`);
-    return gain;
+  setBusMuted(bus: BusName, muted: boolean, fadeMs = 200) {
+    this.state[bus].muted = muted;
+    const node = bus === "Master" ? this.master : this.buses[bus].gain;
+    this.rampNode(node, muted ? 0 : this.state[bus].volume, fadeMs);
   }
 
-  /** Get the master gain node */
-  getMasterGain(): GainNode {
-    return this.masterGain;
+  duck(bus: BusName, target: number, fadeMs = 300) {
+    const node = bus === "Master" ? this.master : this.buses[bus].gain;
+    const existing = this.duckTimers.get(bus);
+    if (existing) window.clearTimeout(existing);
+    this.rampNode(node, target * this.state[bus].volume, fadeMs);
   }
 
-  /** Set a bus volume (0-1) with immediate effect */
-  setBusVolume(bus: BusName, volume: number): void {
-    const clamped = Math.max(0, Math.min(1, volume));
-    this.busVolumes.set(bus, clamped);
-    const gain = this.busGains.get(bus);
-    if (gain) gain.gain.value = this.isMuted ? 0 : clamped;
+  restore(bus: BusName, fadeMs = 300) {
+    const node = bus === "Master" ? this.master : this.buses[bus].gain;
+    this.rampNode(node, this.state[bus].muted ? 0 : this.state[bus].volume, fadeMs);
   }
 
-  /** Set master volume (0-1) with immediate effect */
-  setMasterVolume(volume: number): void {
-    this.masterVolume = Math.max(0, Math.min(1, volume));
-    this.masterGain.gain.value = this.isMuted ? 0 : this.masterVolume;
+  duckThenRestore(bus: BusName, target: number, holdMs: number, fadeMs = 300) {
+    this.duck(bus, target, fadeMs);
+    const t = window.setTimeout(() => this.restore(bus, fadeMs), holdMs);
+    this.duckTimers.set(bus, t);
   }
 
-  /** Mute or unmute all audio */
-  mute(muted: boolean): void {
-    this.isMuted = muted;
-    const target = muted ? 0 : this.masterVolume;
-    this.masterGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.01);
-    // Also mute bus gains to avoid signal buildup? Master handles it, but we keep bus gains at their volumes.
-  }
-
-  /** Toggle mute state */
-  toggleMute(): void {
-    this.mute(!this.isMuted);
-  }
-
-  /** Get mute state */
-  get muted(): boolean {
-    return this.isMuted;
-  }
-
-  /** Get current master volume */
-  get masterVol(): number {
-    return this.masterVolume;
-  }
-
-  /** Get current bus volume (0-1) */
-  getBusVolume(bus: BusName): number {
-    return this.busVolumes.get(bus) ?? 1;
-  }
-
-  /** Fade master volume to target over duration (seconds) */
-  fadeMaster(target: number, duration: number = DEFAULT_FADE_TIME): void {
-    const clamped = Math.max(0, Math.min(1, target));
-    this.masterVolume = clamped; // store target
-    if (!this.isMuted) {
-      this.masterGain.gain.linearRampToValueAtTime(clamped, this.ctx.currentTime + duration);
-    }
-  }
-
-  /** Fade a bus volume to target over duration (seconds) */
-  fadeBus(bus: BusName, target: number, duration: number = DEFAULT_FADE_TIME): void {
-    const clamped = Math.max(0, Math.min(1, target));
-    this.busVolumes.set(bus, clamped);
-    const gain = this.busGains.get(bus);
-    if (gain && !this.isMuted) {
-      gain.gain.linearRampToValueAtTime(clamped, this.ctx.currentTime + duration);
-    } else if (gain) {
-      gain.gain.value = 0; // muted
-    }
-  }
-
-  /**
-   * Duck a bus: temporarily reduce its volume by a factor (0-1) over duration,
-   * then restore after a hold time. Useful for voice-over.
-   * @param bus Bus to duck
-   * @param amount Factor to reduce (0 = silence, 0.5 = half volume)
-   * @param fadeIn Duration to fade down
-   * @param hold Duration to hold ducked level before restoring
-   * @param fadeOut Duration to fade back up
-   */
-  duck(bus: BusName, amount: number, fadeIn: number = 0.3, hold: number = 1.0, fadeOut: number = 0.3): void {
-    const gain = this.busGains.get(bus);
-    if (!gain) return;
-    const current = this.busVolumes.get(bus) ?? 1;
-    const target = current * (1 - Math.max(0, Math.min(1, amount)));
-    const now = this.ctx.currentTime;
-    gain.gain.linearRampToValueAtTime(target, now + fadeIn);
-    gain.gain.linearRampToValueAtTime(target, now + fadeIn + hold);
-    gain.gain.linearRampToValueAtTime(current, now + fadeIn + hold + fadeOut);
-  }
-
-  /** Dispose all gain nodes and disconnect */
-  dispose(): void {
-    this.masterGain.disconnect();
-    for (const gain of this.busGains.values()) {
-      gain.disconnect();
-    }
-    this.busGains.clear();
-    this.busVolumes.clear();
+  dispose() {
+    for (const name of BUS_NAMES) { if (name === "Master") continue; this.buses[name].input.disconnect(); this.buses[name].gain.disconnect(); }
+    this.master.disconnect();
+    for (const t of this.duckTimers.values()) window.clearTimeout(t);
+    this.duckTimers.clear();
   }
 }
