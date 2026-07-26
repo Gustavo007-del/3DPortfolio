@@ -1,42 +1,94 @@
 "use client";
 import * as THREE from "three";
+import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
-import { WorldProvider } from "./WorldState";
-import { JourneyProvider } from "@/components/Journey/JourneyProvider";
+import { WorldProvider, useWorldState } from "./WorldState";
+import WorldInput from "@/components/canvas/WorldInput";
+import WorldCamera from "@/components/canvas/WorldCamera";
+import LODGroup from "@/components/each-frame/WorldLOD";
+import IslandScene from "@/components/Island/IslandScene";
+import AudioZones from "@/components/Island/AudioZones";
 import { AudioProvider } from "@/components/Audio/AudioProvider";
+import AudioController from "@/components/Audio/AudioController";
+import AudioButton from "@/components/Audio/AudioButton";
+import AudioDebug from "@/components/Audio/AudioDebug";
+import JourneyCamera from "@/components/Journey/JourneyCamera";
+import JourneyUI from "@/components/Journey/JourneyUI";
+import { JourneyProvider } from "@/components/Journey/JourneyProvider";
+import ChapterPanel from "@/components/Journey/ChapterPanel";
 import { WindProvider } from "@/components/fire/WindContext";
+import SolarSystem from "@/components/scene/SolarSystem";
+import { TransitionManagerProvider } from "@/components/World/Transition/TransitionManager";
+import CloudTransition from "@/components/World/Transition/CloudTransition";
 
-// Placeholder mesh — confirms Canvas/provider stack boots.
-// Removed in step 8 once IslandScene/SolarSystem are wired through WorldLOD.
-function BootTestMesh() {
+const Leva = dynamic(() => import("leva").then((m) => m.Leva), { ssr: false });
+const WorldDebug = dynamic(() => import("@/components/systems/WorldDebug"), { ssr: false });
+
+function SpaceLayer() {
+  const { phase } = useWorldState();
+  const active = phase === "SPACE" || phase === "TRANSITION_TO_SPACE";
   return (
-    <mesh>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#888" />
-    </mesh>
+    <LODGroup group="space">
+      <SolarSystem active={active} />
+    </LODGroup>
+  );
+}
+
+function JourneyOverlay() {
+  const { phase } = useWorldState();
+  if (phase !== "ISLAND") return null;
+  return (
+    <>
+      <JourneyUI />
+      <ChapterPanel />
+    </>
+  );
+}
+
+function IslandLayer() {
+  const { phase } = useWorldState();
+  const active = phase === "ISLAND" || phase === "TRANSITION_TO_ISLAND";
+  return (
+    <LODGroup group="island">
+      <IslandScene active={active} />
+      <AudioZones />
+      <JourneyCamera />
+    </LODGroup>
   );
 }
 
 export default function WorldManager() {
   return (
     <WorldProvider>
-      <JourneyProvider>
-        <AudioProvider>
-          <div className="relative w-screen h-screen overflow-hidden">
-            <Canvas
-              shadows
-              camera={{ position: [0, 6, 22], fov: 50, far: 6000 }}
-              gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
-            >
-              <WindProvider>
-                <ambientLight intensity={0.5} />
-                <directionalLight position={[5, 5, 5]} intensity={1} />
-                <BootTestMesh />
-              </WindProvider>
-            </Canvas>
-          </div>
-        </AudioProvider>
-      </JourneyProvider>
+      <TransitionManagerProvider>
+        <JourneyProvider>
+          <AudioProvider>
+            <div className="relative w-screen h-screen overflow-hidden" style={{ background: "#050510" }}>
+              <Canvas
+                shadows
+                camera={{ position: [0, 6, 22], fov: 50, far: 6000 }}
+                gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
+              >
+                <WindProvider>
+                  <WorldCamera />
+                  <CloudTransition />
+                  <SpaceLayer />
+                  <IslandLayer />
+                </WindProvider>
+              </Canvas>
+
+              <WorldInput />
+              <JourneyOverlay />
+              <AudioButton />
+              <AudioController />
+              <Leva hidden />
+              <WorldDebug />
+              <AudioDebug />
+              {/* <CameraDebug /> */}
+            </div>
+          </AudioProvider>
+        </JourneyProvider>
+      </TransitionManagerProvider>
     </WorldProvider>
   );
 }

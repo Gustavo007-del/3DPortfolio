@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, ReactNode } from "react";
-import { useWorldState } from "./WorldState";
+import { useWorldState } from "@/components/World/WorldState";
 
 export type LODGroupName = "space" | "island";
 

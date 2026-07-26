@@ -6,11 +6,13 @@ import PostProcessing from "../effects/PostProcessing";
 import StarField from "../stars/StarField";
 import Nebula from "../effects/Nebula";
 
-export default function SolarSystem() {
+// active defaults true so the standalone app/animate/page.tsx route (if kept as
+// a dev route) behaves exactly as before with zero changes required there.
+export default function SolarSystem({ active = true }: { active?: boolean }) {
   return (
     <>
       <SceneLights />
-      <PostProcessing />
+      {active && <PostProcessing />}
       <Sun />
 
       <OrbitRing radius={8} />
@@ -18,7 +20,6 @@ export default function SolarSystem() {
 
       <Nebula />
       <StarField />
-
     </>
   );
 }

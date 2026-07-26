@@ -6,7 +6,7 @@ import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 import * as THREE from "three";
 
-export default function SceneAtmosphereController() {
+export default function SceneAtmosphereController({ active = true }: { active?: boolean }) {
   const { gl } = useThree();
 
   const { ambientIntensity, ambientColor } = useControls("Ambient", {
@@ -31,7 +31,7 @@ export default function SceneAtmosphereController() {
   return (
     <>
       <ambientLight intensity={ambientIntensity} color={ambientColor} />
-      <fog attach="fog" args={[fogColor, fogNear, fogFar]} />
+      {active && <fog attach="fog" args={[fogColor, fogNear, fogFar]} />}
     </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useControls, button, folder } from "leva";
-import { useWorldState } from "./WorldState";
+import { useWorldState } from "@/components/World/WorldState";
 
 export default function WorldDebug() {
   const { phase, cameraOwner, progressRef, targetProgressRef, goToSpace, goToIsland } = useWorldState();

@@ -67,15 +67,14 @@ function Mountain({
  return <primitive object={scene} />;
 }
 
-export default function IslandScene() {
+export default function IslandScene({ active = true }: { active?: boolean }) {
   const [rocks, setRocks] = useState<THREE.Mesh[]>([]);
 
   return (
     <>
       <GradientSkyController />
 
-      <SceneAtmosphereController />
-      {/* <CloudLayer /> */}
+      <SceneAtmosphereController active={active} />      {/* <CloudLayer /> */}
 
 
       <LightController />
