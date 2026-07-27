@@ -105,7 +105,16 @@ export function computeCloudDensity(localT: number, assetsReady: boolean, config
 
   return raw * config.cloudDensityMax;
 }
-
+// Density driven by corridorU (0 at swap instant, both directions) instead
+// of raw worldProgress — TRANSITION_TO_SPACE always starts at progress≈1,
+// which the old progress-based curve read as "already clearing," leaving
+// the Space/Island swap completely unmasked on the way out.
+export function computeSessionDensity(u: number, assetsReady: boolean, config: TransitionConfig): number {
+  const FALL_START = 0.55; // fraction of the flight fully immersed before clearing begins
+  let raw = u <= FALL_START ? 1 : 1 - smoothstep((u - FALL_START) / (1 - FALL_START));
+  if (u >= FALL_START && !assetsReady) raw = 1;
+  return raw * config.cloudDensityMax;
+}
 export type CorridorState = {
   position: [number, number, number];
   lookAt: [number, number, number];

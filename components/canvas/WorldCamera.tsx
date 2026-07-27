@@ -143,10 +143,20 @@ const { started, isTransitioning } = useJourney();
     progressRef.current = smoothProgress(progressRef.current, targetProgressRef.current, delta);
     const p = progressRef.current;
 
-    if (insideCloudsRef.current) {
-      // Cloud corridor (CloudTransition) owns position/lookAt/fov/bank for the
-      // whole TRANSITION_TO_ISLAND/TRANSITION_TO_SPACE window — this is the
-      // ONLY place the old getWorldCameraState path is bypassed.
+    if (insideCloudsRef.current && phase === "TRANSITION_TO_ISLAND") {
+      // Entering Island: camera holds perfectly still at Island's resting
+      // endpoint for the ENTIRE crossing. No corridor flight, no zoom in/out —
+      // only cloud density (driven by CloudTransition) animates, so scrolling
+      // back and forth never moves the destination scene, it only reveals or
+      // hides it behind cloud cover.
+      state.camera.position.set(...ISLAND_ENDPOINT.position);
+      state.camera.lookAt(...ISLAND_ENDPOINT.lookAt);
+      if ("fov" in state.camera) {
+        (state.camera as any).fov = ISLAND_ENDPOINT.fov;
+        (state.camera as any).updateProjectionMatrix();
+      }
+    } else if (insideCloudsRef.current) {
+      // Leaving Island (TRANSITION_TO_SPACE) — unchanged corridor flight.
       const { position, lookAt, fov, bank } = corridorRef.current;
 
       const holding = !assetsReady;

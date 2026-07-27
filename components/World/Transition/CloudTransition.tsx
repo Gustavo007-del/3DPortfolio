@@ -11,6 +11,7 @@ import {
   sampleCloudCorridor,
   remapCloudProgress,
   computeCloudDensity,
+  computeSessionDensity,
   CloudCorridor,
 } from "@/components/World/Transition/TransitionManager";
 import CloudField from "./CloudField";
@@ -22,7 +23,13 @@ const SPACE_ZOOM_POS = new THREE.Vector3(...SPACE_ZOOM_ENDPOINT.position);
 
 const MAX_FOG_DENSITY = 0.045; // tune to taste — higher = the world gets swallowed faster
 const FOG_COLOR = new THREE.Color("#c7d3e8");
-
+const SKY_ENTRY_HEIGHT = 260; // how high above Island's resting camera the descent starts — tune to taste
+const ISLAND_SKY_ENTRY = new THREE.Vector3(
+  ISLAND_ENDPOINT.position[0],
+  ISLAND_ENDPOINT.position[1] + SKY_ENTRY_HEIGHT,
+  ISLAND_ENDPOINT.position[2]
+);
+const SPACE_POS = new THREE.Vector3(...SPACE_ENDPOINT.position); // needed below, was missing
 type CorridorSession = {
   direction: "toIsland" | "toSpace";
   snapshotProgress: number; // worldProgress at the exact instant this session was captured
@@ -62,29 +69,30 @@ export default function CloudTransition() {
     const startPos = camera.position.clone();
     const startFov = "fov" in camera ? (camera as THREE.PerspectiveCamera).fov : SPACE_ENDPOINT.fov;
     const snapshotProgress = progressRef.current;
+    console.log("[snapshot]", enteringToIsland ? "toIsland" : "toSpace", startPos.toArray(), "progress:", snapshotProgress);
 
     if (enteringToIsland) {
       setSession({
-        direction: "toIsland",
-        snapshotProgress,
-        start: startPos,
-        end: ISLAND_POS.clone(),
-        startLookAt: ORIGIN.clone(),
-        endLookAt: ISLAND_LOOKAT.clone(),
-        startFov,
-        endFov: ISLAND_ENDPOINT.fov,
-      });
+  direction: "toIsland",
+  snapshotProgress,
+  start: ISLAND_SKY_ENTRY.clone(),   // was: startPos (actual Space camera position)
+  end: ISLAND_POS.clone(),
+  startLookAt: ISLAND_LOOKAT.clone(), // was: ORIGIN.clone()
+  endLookAt: ISLAND_LOOKAT.clone(),
+  startFov: ISLAND_ENDPOINT.fov,      // was: captured startFov
+  endFov: ISLAND_ENDPOINT.fov,
+});
     } else {
       setSession({
-        direction: "toSpace",
-        snapshotProgress,
-        start: startPos,
-        end: SPACE_ZOOM_POS.clone(),
-        startLookAt: ISLAND_LOOKAT.clone(),
-        endLookAt: ORIGIN.clone(),
-        startFov,
-        endFov: SPACE_ENDPOINT.fov,
-      });
+  direction: "toSpace",
+  snapshotProgress,
+  start: startPos.clone(),        // unchanged — real Island camera position, valid since it could be anywhere from free orbit
+  end: SPACE_POS.clone(),          // was: SPACE_ZOOM_POS.clone()
+  startLookAt: ISLAND_LOOKAT.clone(),
+  endLookAt: ORIGIN.clone(),
+  startFov,
+  endFov: SPACE_ENDPOINT.fov,
+});
     }
   }, [phase, camera, progressRef]);
 
@@ -126,54 +134,34 @@ export default function CloudTransition() {
   }, [registerLoadTrigger, gl, scene, camera]);
 
   useFrame(() => {
-    const progress = progressRef.current;
+  const progress = progressRef.current;
+  const insideClouds = (phase === "TRANSITION_TO_ISLAND" || phase === "TRANSITION_TO_SPACE") && !!session;
+  insideCloudsRef.current = insideClouds;
 
-    // Fog/visibility window — broad, and intentionally NOT tied to the
-    // actual phase flip. This lets density start climbing while still in
-    // SPACE (foreshadowing) well before the real position-jump begins.
-    const localT = remapCloudProgress(progress, config);
-    const density = computeCloudDensity(localT, assetsReady, config);
-    densityRef.current = density;
+  let density = 0;
 
-    if (scene.fog instanceof THREE.FogExp2) {
-      scene.fog.density = density * MAX_FOG_DENSITY;
-    }
-
-    if (density >= config.loadThreshold) fireLoadTriggersOnce();
-
-    // Camera-control handoff — strictly phase-based. This is what
-    // WorldCamera (next file) will check to decide whether to source the
-    // camera transform from getWorldCameraState (unchanged) or from
-    // corridorRef (new).
-    const insideClouds = (phase === "TRANSITION_TO_ISLAND" || phase === "TRANSITION_TO_SPACE") && !!session;    
-    insideCloudsRef.current = insideClouds;
-
-    if (!insideClouds || !session || !corridor) return;
-
-    // Re-base progress into corridor-local space so u=0 lands exactly on
-    // the snapshot position (no pop) regardless of which raw worldProgress
-    // value the snapshot happened to occur at.
-    const denom =
-      session.direction === "toIsland"
-        ? Math.max(1e-4, 1 - session.snapshotProgress)
-        : Math.max(1e-4, session.snapshotProgress);
-    const raw =
-      session.direction === "toIsland"
-        ? (progress - session.snapshotProgress) / denom
-        : (session.snapshotProgress - progress) / denom;
+  if (insideClouds && session && corridor) {
+    const denom = session.direction === "toIsland"
+      ? Math.max(1e-4, 1 - session.snapshotProgress)
+      : Math.max(1e-4, session.snapshotProgress);
+    const raw = session.direction === "toIsland"
+      ? (progress - session.snapshotProgress) / denom
+      : (session.snapshotProgress - progress) / denom;
     const corridorU = THREE.MathUtils.clamp(raw, 0, 1);
 
-    corridorRef.current = sampleCloudCorridor(
-      corridor,
-      easeInOutCubic(corridorU),
-      session.startLookAt,
-      session.endLookAt,
-      session.startFov,
-      session.endFov,
-      config.maxBankDeg
-    );
-  });
+    density = computeSessionDensity(corridorU, assetsReady, config);
 
+    corridorRef.current = sampleCloudCorridor(
+      corridor, easeInOutCubic(corridorU),
+      session.startLookAt, session.endLookAt,
+      session.startFov, session.endFov, session.direction === "toIsland" ? 0 : config.maxBankDeg
+    );
+  }
+
+  densityRef.current = density;
+  if (scene.fog instanceof THREE.FogExp2) scene.fog.density = density * MAX_FOG_DENSITY;
+  if (density >= config.loadThreshold) fireLoadTriggersOnce();
+});
   // Deliberately left mounted (just invisible, via CloudField's own density
   // gate) rather than unmounted between crossings — mirrors LODGroup's
   // existing "toggle visible, never destroy" philosophy elsewhere in this
