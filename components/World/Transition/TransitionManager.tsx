@@ -41,6 +41,8 @@ export type TransitionConfig = {
   cloudDrift: number; // per-instance noise animation speed
   maxBankDeg: number; // camera roll clamp while flying the corridor
   loadThreshold: number; // local cloud progress (0-1) at which asset loading is triggered
+  cloudScrollCoupling: number; // how strongly scroll SPEED (not just position) drives cloud movement
+  islandArrivalSpan: number;  
 };
 
 export const DEFAULT_TRANSITION_CONFIG: TransitionConfig = {
@@ -53,6 +55,8 @@ export const DEFAULT_TRANSITION_CONFIG: TransitionConfig = {
   cloudDrift: 0.6,
   maxBankDeg: 6,
   loadThreshold: 0.35,
+  cloudScrollCoupling: 25,
+  islandArrivalSpan: 1,
 };
 
 /*
@@ -200,6 +204,8 @@ export function TransitionManagerProvider({ children }: { children: ReactNode })
     cloudDrift: { value: DEFAULT_TRANSITION_CONFIG.cloudDrift, min: 0, max: 3, step: 0.05 },
     maxBankDeg: { value: DEFAULT_TRANSITION_CONFIG.maxBankDeg, min: 0, max: 25, step: 1 },
     loadThreshold: { value: DEFAULT_TRANSITION_CONFIG.loadThreshold, min: 0, max: 1, step: 0.01 },
+    cloudScrollCoupling: { value: DEFAULT_TRANSITION_CONFIG.cloudScrollCoupling, min: 0, max: 100, step: 1 },
+islandArrivalSpan: { value: DEFAULT_TRANSITION_CONFIG.islandArrivalSpan, min: 0.05, max: 1, step: 0.01 },
   });
 
   const config: TransitionConfig = leva;

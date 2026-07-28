@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
+import CloudVeil from "@/components/World/Transition/CloudVeil";
 import { useWorldState } from "@/components/World/WorldState";
-import { ISLAND_ENDPOINT, SPACE_ENDPOINT, SPACE_ZOOM_ENDPOINT, easeInOutCubic } from "@/components/World/WorldTimeline";
+import { ISLAND_ENDPOINT, SPACE_ENDPOINT, SPACE_ZOOM_ENDPOINT, easeInOutCubic, getIslandArrivalT } from "@/components/World/WorldTimeline";
 import {
   useTransitionManager,
   buildCloudCorridor,
@@ -135,18 +136,24 @@ export default function CloudTransition() {
 
   useFrame(() => {
   const progress = progressRef.current;
-  const insideClouds = (phase === "TRANSITION_TO_ISLAND" || phase === "TRANSITION_TO_SPACE") && !!session;
-  insideCloudsRef.current = insideClouds;
+
+  const toIslandActive = phase === "TRANSITION_TO_ISLAND";
+  const toSpaceActive = phase === "TRANSITION_TO_SPACE" && !!session;
+  insideCloudsRef.current = toIslandActive || toSpaceActive;
 
   let density = 0;
 
-  if (insideClouds && session && corridor) {
-    const denom = session.direction === "toIsland"
-      ? Math.max(1e-4, 1 - session.snapshotProgress)
-      : Math.max(1e-4, session.snapshotProgress);
-    const raw = session.direction === "toIsland"
-      ? (progress - session.snapshotProgress) / denom
-      : (session.snapshotProgress - progress) / denom;
+  if (toIslandActive) {
+    // Deliberately independent of `session`/`corridor` React state — those
+    // only exist a render cycle after `phase` flips (via the useEffect
+    // above), which was causing Island to be visible for a frame or two
+    // before the veil existed. Density here comes straight from progress +
+    // config, so it's correct on the very first frame of the transition.
+    const localT = getIslandArrivalT(progress, config.islandArrivalSpan);
+    density = computeCloudDensity(localT, assetsReady, config);
+  } else if (toSpaceActive && session && corridor) {
+    const denom = Math.max(1e-4, session.snapshotProgress);
+    const raw = (session.snapshotProgress - progress) / denom;
     const corridorU = THREE.MathUtils.clamp(raw, 0, 1);
 
     density = computeSessionDensity(corridorU, assetsReady, config);
@@ -154,18 +161,24 @@ export default function CloudTransition() {
     corridorRef.current = sampleCloudCorridor(
       corridor, easeInOutCubic(corridorU),
       session.startLookAt, session.endLookAt,
-      session.startFov, session.endFov, session.direction === "toIsland" ? 0 : config.maxBankDeg
+      session.startFov, session.endFov, config.maxBankDeg
     );
   }
 
   densityRef.current = density;
   if (scene.fog instanceof THREE.FogExp2) scene.fog.density = density * MAX_FOG_DENSITY;
   if (density >= config.loadThreshold) fireLoadTriggersOnce();
-});
-  // Deliberately left mounted (just invisible, via CloudField's own density
-  // gate) rather than unmounted between crossings — mirrors LODGroup's
-  // existing "toggle visible, never destroy" philosophy elsewhere in this
-  // codebase, and avoids re-allocating instance buffers every scroll
-  // back-and-forth.
-  return session && corridor ? <CloudField start={session.start} end={session.end} /> : null;
+}); 
+ 
+return (
+  <>
+    {/* Always mounted (not conditional on phase/session) so it never has to
+        "catch up" after a phase flip — internal density check handles its
+        own visibility every frame. This is the other half of the flash fix. */}
+    <CloudVeil />
+    {session && corridor && phase === "TRANSITION_TO_SPACE" ? (
+      <CloudField start={session.start} end={session.end} />
+    ) : null}
+  </>
+);
 }

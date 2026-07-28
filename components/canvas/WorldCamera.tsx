@@ -12,6 +12,7 @@ import {
   SPACE_ENDPOINT,
   SPACE_ZOOM_ENDPOINT,
   ENTER_ISLAND_THRESHOLD,
+  getIslandArrivalT,
 } from "@/components/World//WorldTimeline";
 import { useJourney } from "@/components/Journey/JourneyProvider";
 import { useTransitionManager } from "@/components/World/Transition/TransitionManager";
@@ -31,7 +32,7 @@ const POLAR_CLAMP = 0.15; // keeps camera from flipping over Sun's poles
 
 export default function WorldCamera() {
   const { phase, cameraOwner, setPhase, setCameraOwner, progressRef, targetProgressRef } = useWorldState();
-  const { corridorRef, insideCloudsRef, assetsReady } = useTransitionManager();
+  const { corridorRef, insideCloudsRef, assetsReady ,config } = useTransitionManager();
   const controls = useThree((s) => s.controls) as CameraControls | null;
   const gl = useThree((s) => s.gl);
   const hasSyncedIslandEntry = useRef(false);
@@ -192,12 +193,11 @@ const { started, isTransitioning } = useJourney();
     }
 
     if (phase === "SPACE" && p >= ENTER_ISLAND_THRESHOLD) setPhase("TRANSITION_TO_ISLAND");
-    // Gated on assetsReady: even once scroll progress has fully arrived, stay
-    // in TRANSITION_TO_ISLAND (camera idle-drifting inside the corridor's hold
-    // zone) until loading has actually finished — "the player should never
-    // see loading" enforced at the phase-machine level, not just visually.
-    if (phase === "TRANSITION_TO_ISLAND" && p >= 1 - ARRIVED_EPSILON && assetsReady) setPhase("ISLAND");
-    if (phase === "TRANSITION_TO_SPACE" && p <= ARRIVED_EPSILON) setPhase("SPACE");
+if (phase === "TRANSITION_TO_ISLAND") {
+  const arrivalT = getIslandArrivalT(p, config.islandArrivalSpan);
+  if (arrivalT >= 1 - ARRIVED_EPSILON && assetsReady) setPhase("ISLAND");
+}
+if (phase === "TRANSITION_TO_SPACE" && p <= ARRIVED_EPSILON) setPhase("SPACE");
   });
 
   return null;

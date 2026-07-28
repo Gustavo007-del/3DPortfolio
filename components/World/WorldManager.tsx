@@ -20,6 +20,8 @@ import { WindProvider } from "@/components/fire/WindContext";
 import SolarSystem from "@/components/scene/SolarSystem";
 import { TransitionManagerProvider } from "@/components/World/Transition/TransitionManager";
 import CloudTransition from "@/components/World/Transition/CloudTransition";
+import LoadingTracker from "@/components/scene/LoadingTracker";
+import SpaceOverlay from "@/components/scene/SpaceOverlay";
 
 const Leva = dynamic(() => import("leva").then((m) => m.Leva), { ssr: false });
 const WorldDebug = dynamic(() => import("@/components/systems/WorldDebug"), { ssr: false });
@@ -57,7 +59,12 @@ function IslandLayer() {
   );
 }
 
-export default function WorldManager() {
+interface WorldManagerProps {
+  onProgress?: (progress: number) => void;
+  onLoaded?: () => void;
+}
+
+export default function WorldManager({ onProgress, onLoaded }: WorldManagerProps) {
   return (
     <WorldProvider>
       <TransitionManagerProvider>
@@ -74,6 +81,7 @@ export default function WorldManager() {
                   <CloudTransition />
                   <SpaceLayer />
                   <IslandLayer />
+                  {onLoaded && <LoadingTracker onProgress={onProgress} onLoaded={onLoaded} />}
                 </WindProvider>
               </Canvas>
 
@@ -81,10 +89,10 @@ export default function WorldManager() {
               <JourneyOverlay />
               <AudioButton />
               <AudioController />
+              <SpaceOverlay />
               <Leva hidden />
               <WorldDebug />
               <AudioDebug />
-              {/* <CameraDebug /> */}
             </div>
           </AudioProvider>
         </JourneyProvider>

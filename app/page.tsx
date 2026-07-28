@@ -1,34 +1,27 @@
- "use client"
+"use client";
+
+import { useState, useCallback } from "react";
 import WorldManager from "@/components/World/WorldManager";
+import LoadingScreen from "@/components/scene/LoadingScreen";
 import { Leva } from "leva";
+
 export default function Page() {
-  return( <><WorldManager /> <Leva/></>);
+  const [loaded, setLoaded] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const handleProgress = useCallback((p: number) => {
+    setProgress(p);
+  }, []);
+
+  const handleLoaded = useCallback(() => {
+    setLoaded(true);
+  }, []);
+
+  return (
+    <>
+      <LoadingScreen progress={progress} visible={!loaded} />
+      <WorldManager onProgress={handleProgress} onLoaded={handleLoaded} />
+      <Leva />
+    </>
+  );
 }
-
-
-// import HeroSection from "../components/HeroSection"
-// import { currentColor } from "../config/colors"
-// import AboutSection from "../components/sections/AboutSection"
-// import SkillsSection from "../components/sections/SkillsSection"
-// import ProjectsSection from "../components/sections/ProjectsSection"
-// import TimelineSection from "../components/sections/TimelineSection"
-// import StatsSection from "../components/sections/StatsSection"
-// import TestimonialsSection from "../components/sections/TestimonialsSection"
-// import ContactSection from "../components/sections/ContactSection"
-// import NavBar from "../components/NavBar"
-
-// export default function Home() {
-//   return (
-//     <main className="text-white" style={{ backgroundColor: currentColor }}>
-//       <NavBar />
-//       <HeroSection />
-//       <AboutSection />
-//       <SkillsSection />
-//       <ProjectsSection />
-//       <TimelineSection />
-//       <StatsSection />
-//       <TestimonialsSection />
-//       <ContactSection />
-//     </main>
-//   )
-// }

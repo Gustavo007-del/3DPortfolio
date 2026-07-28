@@ -100,7 +100,18 @@ export function getWorldCameraState(
     fov: lerp(SPACE_ENDPOINT.fov, ISLAND_ENDPOINT.fov, localT),
   };
 }
-
+// Local 0..1 "how far through the approach to Island" — decoupled from raw
+// worldProgress reaching a literal 1, so `islandArrivalSpan` (Leva, in
+// TransitionManager's config) can control how MUCH scroll past
+// ENTER_ISLAND_THRESHOLD is needed to fully arrive. Smaller span = arrives
+// after less scrolling; span = 1 reproduces the old "must scroll all the
+// way to progress===1" behavior.
+export function getIslandArrivalT(progress: number, arrivalSpan: number): number {
+  const clampedSpan = Math.min(1, Math.max(0.05, arrivalSpan));
+  const span = Math.max(0.0001, (1 - ENTER_ISLAND_THRESHOLD) * clampedSpan);
+  const raw = (progress - ENTER_ISLAND_THRESHOLD) / span;
+  return Math.min(1, Math.max(0, raw));
+}
 export const PROGRESS_SMOOTH_SPEED = 3.5;
 
 export function smoothProgress(current: number, target: number, delta: number, speed = PROGRESS_SMOOTH_SPEED) {
