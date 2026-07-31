@@ -6,7 +6,7 @@ import { useWorldState } from "@/components/World/WorldState";
 // Headless. Renders an invisible scroll track purely to give Lenis room to smooth
 // against — never visible, never focusable, never scrolled by native page scroll.
 export default function WorldInput() {
-  const { phase, cameraOwner, targetProgressRef } = useWorldState();
+  const { cameraOwner, targetProgressRef } = useWorldState();
   const trackRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const lenisRef = useRef<Lenis | null>(null);
@@ -49,9 +49,11 @@ export default function WorldInput() {
   useEffect(() => {
     const lenis = lenisRef.current;
     if (!lenis) return;
-    if (cameraOwner === "journey" || phase === "ISLAND") lenis.stop();
+    // The landing screen remains part of the world scroll. Only the explicit
+    // portfolio journey takes ownership and freezes world progress.
+    if (cameraOwner === "journey") lenis.stop();
     else lenis.start();
-  }, [cameraOwner, phase]);
+  }, [cameraOwner]);
 
   return (
     <div

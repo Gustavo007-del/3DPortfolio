@@ -19,6 +19,7 @@ import { useTransitionManager } from "@/components/World/Transition/TransitionMa
 import { computeLookAtQuaternion } from "@/components/Journey/cameraHelpers";
 
 const ARRIVED_EPSILON = 0.001;
+const SCROLL_DIRECTION_EPSILON = 0.0001;
 
 // Distance (CameraControls.distance) beyond which continued outward wheel scroll
 // while in ISLAND triggers exit back to SPACE. Tune against Island's real scale.
@@ -120,11 +121,38 @@ const { started, isTransitioning } = useJourney();
     if (cameraOwner === "journey") return; // JourneyCamera's own useFrame owns the camera entirely.
 
     if (phase === "ISLAND") {
+      // Until "Begin Journey" is selected, Island is a reversible stop on
+      // the world scroll rather than a terminal state.
+      if (!started && targetProgressRef.current + SCROLL_DIRECTION_EPSILON < progressRef.current) {
+        setPhase("TRANSITION_TO_SPACE");
+        return;
+      }
+
       if (!controls) return;
       const dist = controls.distance;
       const scrollingOut = targetProgressRef.current < progressRef.current;
       if (dist >= ISLAND_EXIT_DISTANCE && scrollingOut) setPhase("TRANSITION_TO_SPACE");
       return;
+    }
+
+    // Keep the world crossing reversible while the landing screen is active.
+    // Journey mode deliberately bypasses this: it owns the camera and locks
+    // world scrolling after the user explicitly starts it.
+    if (!started) {
+      if (
+        phase === "TRANSITION_TO_ISLAND" &&
+        targetProgressRef.current + SCROLL_DIRECTION_EPSILON < progressRef.current
+      ) {
+        setPhase("TRANSITION_TO_SPACE");
+        return;
+      }
+      if (
+        phase === "TRANSITION_TO_SPACE" &&
+        targetProgressRef.current > progressRef.current + SCROLL_DIRECTION_EPSILON
+      ) {
+        setPhase("TRANSITION_TO_ISLAND");
+        return;
+      }
     }
 
     // Idle auto-rotate, matching the old OrbitControls autoRotate feel — pauses
