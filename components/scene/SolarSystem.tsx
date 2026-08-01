@@ -61,7 +61,7 @@ export default function SolarSystem({ active = true }: { active?: boolean }) {
         <Saturn />
       </PlanetOrbit>
 
-      <Comet radius={35} speed={0.12} />
+      <Comet  />
 
       <Nebula />
       <StarField />
