@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { useControls } from "leva";
 import type { CameraControls } from "@react-three/drei";
 import { useWorldState } from "@/components/World/WorldState";
 import {
@@ -19,7 +20,12 @@ import { useTransitionManager } from "@/components/World/Transition/TransitionMa
 import { computeLookAtQuaternion } from "@/components/Journey/cameraHelpers";
 
 const ARRIVED_EPSILON = 0.001;
-const SCROLL_DIRECTION_EPSILON = 0.0001;
+// Margin below ENTER_ISLAND_THRESHOLD required before a transition phase is
+// allowed to fall back to SPACE. Without this, progress hovering within a
+// hair of the threshold (common with exponential smoothing) can flicker
+// TRANSITION_TO_ISLAND/SPACE <-> SPACE rapidly — reads as a stuck or
+// skipped phase.
+const PHASE_HYSTERESIS = 0.01;
 
 // Distance (CameraControls.distance) beyond which continued outward wheel scroll
 // while in ISLAND triggers exit back to SPACE. Tune against Island's real scale.
@@ -33,11 +39,11 @@ const POLAR_CLAMP = 0.15; // keeps camera from flipping over Sun's poles
 
 export default function WorldCamera() {
   const { phase, cameraOwner, setPhase, setCameraOwner, progressRef, targetProgressRef } = useWorldState();
-  const { corridorRef, insideCloudsRef, assetsReady ,config } = useTransitionManager();
+  const { corridorRef, insideCloudsRef, assetsReady, config } = useTransitionManager();
   const controls = useThree((s) => s.controls) as CameraControls | null;
   const gl = useThree((s) => s.gl);
   const hasSyncedIslandEntry = useRef(false);
-const { started, isTransitioning } = useJourney();
+  const { started, isTransitioning } = useJourney();
 
   // Base spherical (angles only) from SPACE_ENDPOINT — drag/auto-rotate offsets
   // apply to these angles, then get combined with each endpoint's own radius,
@@ -58,6 +64,19 @@ const { started, isTransitioning } = useJourney();
   // from zero each time rather than resuming mid-wave from a stale value.
   const holdElapsedRef = useRef(0);
 
+  // Debug readout — visible in Leva (temporarily set <Leva /> instead of
+  // <Leva hidden /> in WorldManager.tsx to see it).
+  const [, setDebug] = useControls(
+    "World Phase Debug",
+    () => ({
+      phase: { value: "SPACE", editable: false },
+      progress: { value: 0, editable: false },
+      targetProgress: { value: 0, editable: false },
+      arrivalT: { value: 0, editable: false },
+    }),
+    { collapsed: true }
+  );
+
   // The one sanctioned World<->Journey coupling point: read Journey's `started`
   // flag only (never chapter data), flip camera ownership accordingly.
   useEffect(() => {
@@ -68,7 +87,7 @@ const { started, isTransitioning } = useJourney();
   useEffect(() => {
     if (!controls) return;
     controls.enabled = phase === "ISLAND" && started && !isTransitioning;
-}, [controls, phase, started, isTransitioning]);
+  }, [controls, phase, started, isTransitioning]);
 
   // One-time hard sync when CameraControls takes over, so it doesn't snap from
   // wherever World's manual writes last left the camera.
@@ -123,7 +142,7 @@ const { started, isTransitioning } = useJourney();
     if (phase === "ISLAND") {
       // Until "Begin Journey" is selected, Island is a reversible stop on
       // the world scroll rather than a terminal state.
-      if (!started && targetProgressRef.current + SCROLL_DIRECTION_EPSILON < progressRef.current) {
+      if (!started && targetProgressRef.current + ARRIVED_EPSILON < progressRef.current) {
         setPhase("TRANSITION_TO_SPACE");
         return;
       }
@@ -135,30 +154,10 @@ const { started, isTransitioning } = useJourney();
       return;
     }
 
-    // Keep the world crossing reversible while the landing screen is active.
-    // Journey mode deliberately bypasses this: it owns the camera and locks
-    // world scrolling after the user explicitly starts it.
-    if (!started) {
-      if (
-        phase === "TRANSITION_TO_ISLAND" &&
-        targetProgressRef.current + SCROLL_DIRECTION_EPSILON < progressRef.current
-      ) {
-        setPhase("TRANSITION_TO_SPACE");
-        return;
-      }
-      if (
-        phase === "TRANSITION_TO_SPACE" &&
-        targetProgressRef.current > progressRef.current + SCROLL_DIRECTION_EPSILON
-      ) {
-        setPhase("TRANSITION_TO_ISLAND");
-        return;
-      }
-    }
-
     // Idle auto-rotate, matching the old OrbitControls autoRotate feel — pauses
     // the moment the user drags, resumes the moment they release. Only visually
     // relevant pre-cloud (the corridor branch below ignores rotatedSpacePos).
-    if (phase === "SPACE" && !isDragging.current) dragTheta.current += AUTO_ROTATE_SPEED * delta;
+    // if (phase === "SPACE" && !isDragging.current) dragTheta.current += AUTO_ROTATE_SPEED * delta;
 
     const theta = baseSpherical.current.theta + dragTheta.current;
     const phi = baseSpherical.current.phi + dragPhi.current;
@@ -171,21 +170,12 @@ const { started, isTransitioning } = useJourney();
 
     progressRef.current = smoothProgress(progressRef.current, targetProgressRef.current, delta);
     const p = progressRef.current;
+    const arrivalT = getIslandArrivalT(p, config.islandArrivalSpan);
 
-    if (insideCloudsRef.current && phase === "TRANSITION_TO_ISLAND") {
-      // Entering Island: camera holds perfectly still at Island's resting
-      // endpoint for the ENTIRE crossing. No corridor flight, no zoom in/out —
-      // only cloud density (driven by CloudTransition) animates, so scrolling
-      // back and forth never moves the destination scene, it only reveals or
-      // hides it behind cloud cover.
-      state.camera.position.set(...ISLAND_ENDPOINT.position);
-      state.camera.lookAt(...ISLAND_ENDPOINT.lookAt);
-      if ("fov" in state.camera) {
-        (state.camera as any).fov = ISLAND_ENDPOINT.fov;
-        (state.camera as any).updateProjectionMatrix();
-      }
-    } else if (insideCloudsRef.current) {
-      // Leaving Island (TRANSITION_TO_SPACE) — unchanged corridor flight.
+    if (insideCloudsRef.current) {
+      // Both TRANSITION_TO_ISLAND and TRANSITION_TO_SPACE now share this
+      // single branch — same corridor, same arrivalT-driven sampling, just
+      // traversed in whichever direction progress is currently moving.
       const { position, lookAt, fov, bank } = corridorRef.current;
 
       const holding = !assetsReady;
@@ -206,7 +196,7 @@ const { started, isTransitioning } = useJourney();
         (state.camera as any).updateProjectionMatrix();
       }
     } else {
-      // Unchanged: plain SPACE-phase zoom/rotate, exactly as before.
+      // Plain SPACE-phase zoom/rotate.
       const { position, lookAt, fov } = getWorldCameraState(
         p,
         [rotatedSpacePos.x, rotatedSpacePos.y, rotatedSpacePos.z],
@@ -220,12 +210,41 @@ const { started, isTransitioning } = useJourney();
       }
     }
 
-    if (phase === "SPACE" && p >= ENTER_ISLAND_THRESHOLD) setPhase("TRANSITION_TO_ISLAND");
-if (phase === "TRANSITION_TO_ISLAND") {
-  const arrivalT = getIslandArrivalT(p, config.islandArrivalSpan);
-  if (arrivalT >= 1 - ARRIVED_EPSILON && assetsReady) setPhase("ISLAND");
-}
-if (phase === "TRANSITION_TO_SPACE" && p <= ARRIVED_EPSILON) setPhase("SPACE");
+    // ---------------------------------------------------------------------
+    // Phase transitions — symmetric on arrivalT, both directions:
+    //   SPACE <-> TRANSITION_TO_ISLAND happens at arrivalT crossing 0
+    //   TRANSITION_TO_ISLAND/SPACE <-> ISLAND happens at arrivalT crossing 1
+    // Same arrivalT value drives both transition phases identically, so
+    // reversing mid-flight just walks back along the same corridor sample
+    // instead of swapping to a different camera-position formula.
+    // ---------------------------------------------------------------------
+
+    if (phase === "SPACE" && p >= ENTER_ISLAND_THRESHOLD) {
+      setPhase("TRANSITION_TO_ISLAND");
+    }
+
+    if (phase === "TRANSITION_TO_ISLAND") {
+      if (p < ENTER_ISLAND_THRESHOLD - PHASE_HYSTERESIS) {
+        setPhase("SPACE");
+      } else if (arrivalT >= 1 - ARRIVED_EPSILON && assetsReady) {
+        setPhase("ISLAND");
+      }
+    }
+
+    if (phase === "TRANSITION_TO_SPACE") {
+      if (p < ENTER_ISLAND_THRESHOLD - PHASE_HYSTERESIS) {
+        setPhase("SPACE");
+      } else if (arrivalT >= 1 - ARRIVED_EPSILON && assetsReady) {
+        setPhase("ISLAND");
+      }
+    }
+
+    setDebug({
+      phase,
+      progress: Number(p.toFixed(4)),
+      targetProgress: Number(targetProgressRef.current.toFixed(4)),
+      arrivalT: Number(arrivalT.toFixed(4)),
+    });
   });
 
   return null;

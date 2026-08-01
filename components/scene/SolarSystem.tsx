@@ -1,3 +1,8 @@
+// components/scene/SolarSystem.tsx
+"use client";
+
+import { useRef } from "react";
+import { Mesh } from "three";
 import SceneLights from "./SceneLights";
 import Sun from "../planets/Sun";
 import OrbitRing from "../planets/OrbitRing";
@@ -12,56 +17,51 @@ import Mars from "../planets/Mars";
 import Jupiter from "../planets/Jupiter";
 import Saturn from "../planets/Saturn";
 import AsteroidBelt from "../planets/AsteroidBelt";
-import PlanetLabel from "./PlanetLabel";
+import Atmosphere from "../planets/Atmosphere";
+import Comet from "../effects/Comet";
 
 export default function SolarSystem({ active = true }: { active?: boolean }) {
+  const sunRef = useRef<Mesh>(null);
+
   return (
     <>
       <SceneLights />
-      {active && <PostProcessing />}
-      <Sun />
+      {active && <PostProcessing sunRef={sunRef} />}
+      <Sun ref={sunRef} />
 
-      {/* Mercury */}
-      <OrbitRing radius={4} />
+      <OrbitRing radius={4} color="#9a9a9a" />
       <PlanetOrbit radius={4} speed={0.6}>
         <Mercury />
-        <PlanetLabel text="Mercury" color="#b0b0b0" />
       </PlanetOrbit>
 
-      {/* Venus */}
-      <OrbitRing radius={6} />
+      <OrbitRing radius={6} color="#e6d7a3" />
       <PlanetOrbit radius={6} speed={0.35} offset={1.2}>
         <Venus />
-        <PlanetLabel text="Venus" color="#e6d7a3" />
+        <Atmosphere radius={0.9} color="#f0d9a0" intensity={0.6} scale={1.1} />
       </PlanetOrbit>
 
-      {/* Earth */}
-      <OrbitRing radius={8} />
+      <OrbitRing radius={8} color="#6ab8ff" />
       <EarthOrbit />
 
-      {/* Mars */}
-      <OrbitRing radius={11} />
+      <OrbitRing radius={11} color="#c1440e" />
       <PlanetOrbit radius={11} speed={0.22} offset={2.5}>
         <Mars />
-        <PlanetLabel text="Mars" color="#c1440e" />
+        <Atmosphere radius={0.7} color="#e08a5a" intensity={0.35} scale={1.08} />
       </PlanetOrbit>
 
-      {/* Asteroid Belt */}
       <AsteroidBelt innerRadius={13} outerRadius={16} count={350} />
 
-      {/* Jupiter */}
-      <OrbitRing radius={19} />
+      <OrbitRing radius={19} color="#d4a574" />
       <PlanetOrbit radius={19} speed={0.12} offset={4}>
         <Jupiter />
-        <PlanetLabel text="Jupiter" color="#d4a574" />
       </PlanetOrbit>
 
-      {/* Saturn */}
-      <OrbitRing radius={26} />
+      <OrbitRing radius={26} color="#e8d5a3" />
       <PlanetOrbit radius={26} speed={0.08} offset={5.5}>
         <Saturn />
-        <PlanetLabel text="Saturn" color="#e8d5a3" />
       </PlanetOrbit>
+
+      <Comet radius={35} speed={0.12} />
 
       <Nebula />
       <StarField />

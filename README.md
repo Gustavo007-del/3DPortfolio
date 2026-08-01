@@ -29,6 +29,8 @@ Open http://localhost:3000
 - Fast mouse move → avatar walks
 - Hover avatar → scales up
 
+
+
 ```
 3DPortfolio
 ├─ .dist
@@ -36,6 +38,8 @@ Open http://localhost:3000
 │  ├─ animate
 │  │  └─ page.tsx
 │  ├─ globals.css
+│  ├─ island
+│  │  └─ page.tsx
 │  ├─ leva-test
 │  │  └─ page.tsx
 │  ├─ Nwisland
@@ -45,6 +49,17 @@ Open http://localhost:3000
 │     └─ page.tsx
 ├─ components
 │  ├─ AnimationDebugger.tsx
+│  ├─ Audio
+│  │  ├─ AudioButton.tsx
+│  │  ├─ AudioController.tsx
+│  │  ├─ AudioDebug.tsx
+│  │  ├─ audioDefaults.ts
+│  │  ├─ AudioManager.ts
+│  │  ├─ AudioMixer.ts
+│  │  ├─ AudioProvider.tsx
+│  │  ├─ AudioSettings.ts
+│  │  ├─ audioTypes.ts
+│  │  └─ AudioZone.tsx
 │  ├─ Avatar.tsx
 │  ├─ AvatarCanvas.tsx
 │  ├─ birds
@@ -56,9 +71,28 @@ Open http://localhost:3000
 │  │  └─ birdTypes.ts
 │  ├─ CameraController.tsx
 │  ├─ CameraInspector.tsx
+│  ├─ canvas
+│  │  ├─ IslandPrewarm.tsx
+│  │  ├─ WorldCamera.tsx
+│  │  └─ WorldInput.tsx
+│  ├─ each-frame
+│  │  └─ WorldLOD.tsx
 │  ├─ effects
 │  │  ├─ Nebula.tsx
 │  │  └─ PostProcessing.tsx
+│  ├─ Environment
+│  │  └─ ParticleEngine
+│  │     ├─ ParticleController.tsx
+│  │     ├─ ParticleDebug.tsx
+│  │     ├─ particleDefaults.ts
+│  │     ├─ ParticleEmitter.tsx
+│  │     ├─ ParticleEngine.tsx
+│  │     ├─ ParticleField.tsx
+│  │     ├─ ParticleMaterial.ts
+│  │     ├─ particleMath.ts
+│  │     ├─ ParticleRenderer.tsx
+│  │     ├─ ParticleTrigger.tsx
+│  │     └─ particleTypes.ts
 │  ├─ ExampleAnimationScenarios.tsx
 │  ├─ fire
 │  │  ├─ CloudLayer.tsx
@@ -75,6 +109,7 @@ Open http://localhost:3000
 │  │  └─ WindContext.tsx
 │  ├─ HeroSection.tsx
 │  ├─ Island
+│  │  ├─ AudioZones.tsx
 │  │  ├─ CameraDebugPanel.tsx
 │  │  ├─ GradientSkyController.tsx
 │  │  ├─ IslandScene.tsx
@@ -98,12 +133,19 @@ Open http://localhost:3000
 │  ├─ NavBar.tsx
 │  ├─ orbits
 │  │  ├─ EarthOrbit.tsx
-│  │  └─ MoonOrbit.tsx
+│  │  ├─ MoonOrbit.tsx
+│  │  └─ PlanetOrbit.tsx
 │  ├─ planets
+│  │  ├─ AsteroidBelt.tsx
 │  │  ├─ Earth.tsx
+│  │  ├─ Jupiter.tsx
+│  │  ├─ Mars.tsx
+│  │  ├─ Mercury.tsx
 │  │  ├─ Moon.tsx
 │  │  ├─ OrbitRing.tsx
-│  │  └─ Sun.tsx
+│  │  ├─ Saturn.tsx
+│  │  ├─ Sun.tsx
+│  │  └─ Venus.tsx
 │  ├─ Portfolio
 │  │  ├─ CompassRose.tsx
 │  │  ├─ ExplorerOverlay.module.css
@@ -112,8 +154,12 @@ Open http://localhost:3000
 │  │  ├─ ScrollCameraRig.tsx
 │  │  └─ useScrollProgress.ts
 │  ├─ scene
+│  │  ├─ LoadingScreen.tsx
+│  │  ├─ LoadingTracker.tsx
+│  │  ├─ PlanetLabel.tsx
 │  │  ├─ SceneLights.tsx
-│  │  └─ SolarSystem.tsx
+│  │  ├─ SolarSystem.tsx
+│  │  └─ SpaceOverlay.tsx
 │  ├─ sections
 │  │  ├─ ContactSection.tsx
 │  │  ├─ ProjectsSection.tsx
@@ -123,7 +169,21 @@ Open http://localhost:3000
 │  │  └─ TimelineSection.tsx
 │  ├─ stars
 │  │  └─ StarField.tsx
-│  └─ StudyCards.tsx
+│  ├─ StudyCards.tsx
+│  ├─ systems
+│  │  ├─ TransitionFade.tsx
+│  │  └─ WorldDebug.tsx
+│  └─ World
+│     ├─ Transition
+│     │  ├─ CloudField.tsx
+│     │  ├─ CloudMaterial.ts
+│     │  ├─ CloudTransition.tsx
+│     │  ├─ CloudVeil.tsx
+│     │  ├─ CloudVeilMaterial.ts
+│     │  └─ TransitionManager.tsx
+│     ├─ WorldManager.tsx
+│     ├─ WorldState.tsx
+│     └─ WorldTimeline.ts
 ├─ config
 │  └─ colors.ts
 ├─ hooks
@@ -141,6 +201,15 @@ Open http://localhost:3000
 ├─ postcss.config.mjs
 ├─ public
 │  ├─ astronaut.glb
+│  ├─ audio
+│  │  ├─ bell.mp3
+│  │  ├─ birds.mp3
+│  │  ├─ click.mp3
+│  │  ├─ fire.mp3
+│  │  ├─ hover.mp3
+│  │  ├─ insects.mp3
+│  │  ├─ sea2.mp3
+│  │  └─ wind.mp3
 │  ├─ hdr
 │  │  └─ qwantani_dusk_2_1k.hdr
 │  ├─ models
@@ -157,3 +226,5 @@ Open http://localhost:3000
 ├─ README.md
 ├─ tailwind.config.ts
 └─ tsconfig.json
+
+```

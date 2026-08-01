@@ -4,7 +4,13 @@ import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import CloudVeil from "@/components/World/Transition/CloudVeil";
 import { useWorldState } from "@/components/World/WorldState";
-import { ISLAND_ENDPOINT, SPACE_ENDPOINT, easeInOutCubic } from "@/components/World/WorldTimeline";
+import {
+  ISLAND_ENDPOINT,
+  SPACE_ENDPOINT,
+  SPACE_ZOOM_ENDPOINT,
+  easeInOutCubic,
+  getIslandArrivalT,
+} from "@/components/World/WorldTimeline";
 import {
   useTransitionManager,
   buildCloudCorridor,
@@ -17,7 +23,12 @@ import {
 import CloudField from "./CloudField";
 
 const ORIGIN = new THREE.Vector3(0, 0, 0);
-const SPACE_POS = new THREE.Vector3(...SPACE_ENDPOINT.position);
+// Anchored to the ZOOM endpoint, not SPACE_ENDPOINT — by the time progress
+// crosses ENTER_ISLAND_THRESHOLD, the Space-phase zoom has already carried
+// the camera to SPACE_ZOOM_ENDPOINT (close to the Sun). Using the wide
+// establishing-shot position here caused a large position snap right at the
+// SPACE <-> transition boundary, in both directions (same shared corridor).
+const SPACE_POS = new THREE.Vector3(...SPACE_ZOOM_ENDPOINT.position);
 const ISLAND_POS = new THREE.Vector3(...ISLAND_ENDPOINT.position);
 const ISLAND_LOOKAT = new THREE.Vector3(...ISLAND_ENDPOINT.lookAt);
 const MAX_FOG_DENSITY = 0.045;
@@ -88,13 +99,26 @@ export default function CloudTransition() {
     const leavingIsland = phase === "TRANSITION_TO_SPACE" && !!session;
     insideCloudsRef.current = enteringIsland || leavingIsland;
 
-    // This adds wisps before the phase boundary and grows them with forward
-    // scroll, using the same live progress every time the visitor returns.
+    // Base "wisps before the flight starts" density, entry side. Kept on its
+    // own window (config.cloudEntryProgress/cloudExitProgress) independent of
+    // the corridor flight window, so fog can start building before the
+    // camera actually starts moving.
     let density = computeCloudDensity(remapCloudProgress(progress, config), assetsReady, config);
 
-    if (leavingIsland && session && corridor) {
-      const corridorU = THREE.MathUtils.clamp(progress, 0, 1);
-      density = computeSessionDensity(1 - corridorU, assetsReady, config);
+    if ((enteringIsland || leavingIsland) && session && corridor) {
+      // Same function of raw progress drives BOTH directions — this is what
+      // makes the corridor flight symmetric. arrivalT is 0 at/below
+      // ENTER_ISLAND_THRESHOLD (Space-side) and 1 at full arrival
+      // (Island-side), regardless of which transition phase is active.
+      const arrivalT = getIslandArrivalT(progress, config.islandArrivalSpan);
+      const corridorU = THREE.MathUtils.clamp(arrivalT, 0, 1);
+
+      if (leavingIsland) {
+        // Leaving uses the session density curve (max at Island-side,
+        // clearing as corridorU falls back toward 0 near Space).
+        density = computeSessionDensity(1 - corridorU, assetsReady, config);
+      }
+
       corridorRef.current = sampleCloudCorridor(
         corridor,
         easeInOutCubic(corridorU),
