@@ -4,7 +4,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useWorldState } from "@/components/World/WorldState";
 
-type StageContent = { id: string; eyebrow: string; heading: string; body: string };
+type Anchor = "left" | "right";
+type StageContent = { id: string; eyebrow: string; heading: string; body: string; anchor: Anchor; vertical: "top" | "mid" };
 
 const STAGES: { at: number; content: StageContent }[] = [
   {
@@ -14,6 +15,8 @@ const STAGES: { at: number; content: StageContent }[] = [
       eyebrow: "IDENTITY.SYS // 01",
       heading: "ASA SHIJIL",
       body: "Backend engineer. Python & Django. Builds systems that hold up in production.",
+      anchor: "left",
+      vertical: "top",
     },
   },
   {
@@ -23,6 +26,8 @@ const STAGES: { at: number; content: StageContent }[] = [
       eyebrow: "PAYLOAD.LOG // 02",
       heading: "SYSTEMS SHIPPED",
       body: "Booking engines, async job pipelines, live client infrastructure — deployed, not demo'd.",
+      anchor: "right",
+      vertical: "mid",
     },
   },
   {
@@ -32,6 +37,8 @@ const STAGES: { at: number; content: StageContent }[] = [
       eyebrow: "RENDER.PIPE // 03",
       heading: "THIS SCENE IS THE PORTFOLIO",
       body: "React Three Fiber, custom GLSL, and a camera you're flying right now.",
+      anchor: "left",
+      vertical: "mid",
     },
   },
   {
@@ -41,6 +48,8 @@ const STAGES: { at: number; content: StageContent }[] = [
       eyebrow: "NAV.APPROACH // 04",
       heading: "DESTINATION LOCKED",
       body: "Keep scrolling. Clearing atmosphere ahead.",
+      anchor: "right",
+      vertical: "top",
     },
   },
 ];
@@ -60,6 +69,26 @@ function useTypewriter(text: string, speed = 22) {
     return () => clearInterval(id);
   }, [text, speed]);
   return out;
+}
+
+// Maps each stage's anchor/vertical combo to actual position classes+styles.
+// Kept as a lookup rather than inline ternaries so adding a 5th/6th stage
+// position later is a one-line addition here, not a scattered edit.
+function getPositionStyle(anchor: Anchor, vertical: "top" | "mid"): React.CSSProperties {
+  const base: React.CSSProperties = { position: "absolute", maxWidth: "28rem" };
+  if (vertical === "top") {
+    base.top = "9rem"; // raised from the old ~38% center — sits higher, under the HUD readouts
+  } else {
+    base.top = "50%";
+    base.transform = "translateY(-50%)";
+  }
+  if (anchor === "left") {
+    base.left = "2rem";
+  } else {
+    base.right = "2rem";
+    base.textAlign = "right";
+  }
+  return base;
 }
 
 export default function SpaceOverlay() {
@@ -100,6 +129,7 @@ export default function SpaceOverlay() {
   const { content } = STAGES[stageIndex];
   const heading = useTypewriter(fading ? "" : content.heading, 28);
   const scanPct = Math.round(liveProgress * 100);
+  const positionStyle = getPositionStyle(content.anchor, content.vertical);
 
   if (phase !== "SPACE") return null;
 
@@ -121,19 +151,17 @@ export default function SpaceOverlay() {
           50% { opacity: 1; }
         }
         @keyframes hud-in {
-          from { opacity: 0; transform: translateY(6px); letter-spacing: 0.15em; }
-          to { opacity: 1; transform: translateY(0); letter-spacing: 0.08em; }
+          from { opacity: 0; letter-spacing: 0.15em; }
+          to { opacity: 1; letter-spacing: 0.08em; }
         }
         .hud-fade-in { animation: hud-in 400ms ease forwards; }
       `}</style>
 
-      {/* vignette */}
       <div
         className="absolute inset-0"
         style={{ background: "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.55) 100%)" }}
       />
 
-      {/* scan line sweep */}
       <div
         className="absolute left-0 right-0 h-24"
         style={{
@@ -142,7 +170,6 @@ export default function SpaceOverlay() {
         }}
       />
 
-      {/* fine scanline texture */}
       <div
         className="absolute inset-0 opacity-[0.08]"
         style={{
@@ -150,7 +177,6 @@ export default function SpaceOverlay() {
         }}
       />
 
-      {/* corner brackets */}
       {[
         { top: "1.5rem", left: "1.5rem", borderTop: "1px solid", borderLeft: "1px solid" },
         { top: "1.5rem", right: "1.5rem", borderTop: "1px solid", borderRight: "1px solid" },
@@ -164,7 +190,6 @@ export default function SpaceOverlay() {
         />
       ))}
 
-      {/* top-left system tag */}
       <div className="absolute top-8 left-14 hidden md:block" style={{ animation: "hud-flicker 7s ease-in-out infinite" }}>
         <p className="text-[10px] tracking-[0.3em]" style={{ color: "rgba(140,220,255,0.6)" }}>
           SOL.NAV — LIVE
@@ -174,7 +199,6 @@ export default function SpaceOverlay() {
         </p>
       </div>
 
-      {/* top-right progress readout */}
       <div className="absolute top-8 right-14 text-right hidden md:block">
         <p className="text-[10px] tracking-[0.3em]" style={{ color: "rgba(140,220,255,0.6)" }}>
           TRAJECTORY
@@ -192,18 +216,20 @@ export default function SpaceOverlay() {
         </div>
       </div>
 
-      {/* main stage text, center-left */}
-      <div className="absolute top-[38%] left-8 md:left-16 -translate-y-1/2 max-w-md">
+      {/* Main stage text — position now driven per-stage via getPositionStyle,
+          migrating between corners/sides as the user scrolls through STAGES. */}
+      <div style={{ ...positionStyle, transition: "top 500ms ease, left 500ms ease, right 500ms ease" }}>
         <div
           key={content.id}
           className={fading ? "" : "hud-fade-in"}
           style={{ opacity: fading ? 0 : 1, transition: "opacity 180ms ease" }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-[1px]" style={{ background: "rgba(140,220,255,0.6)" }} />
+          <div className={`flex items-center gap-2 mb-3 ${content.anchor === "right" ? "justify-end" : ""}`}>
+            {content.anchor === "left" && <div className="w-6 h-[1px]" style={{ background: "rgba(140,220,255,0.6)" }} />}
             <p className="text-[10px] tracking-[0.35em]" style={{ color: "rgba(140,220,255,0.75)" }}>
               {content.eyebrow}
             </p>
+            {content.anchor === "right" && <div className="w-6 h-[1px]" style={{ background: "rgba(140,220,255,0.6)" }} />}
           </div>
           <h1
             className="text-4xl md:text-6xl font-bold leading-[1.05]"
@@ -222,14 +248,19 @@ export default function SpaceOverlay() {
           </h1>
           <p
             className="mt-4 text-sm md:text-base"
-            style={{ color: "rgba(210,235,255,0.7)", borderLeft: "1px solid rgba(140,220,255,0.3)", paddingLeft: "1rem" }}
+            style={{
+              color: "rgba(210,235,255,0.7)",
+              borderLeft: content.anchor === "left" ? "1px solid rgba(140,220,255,0.3)" : "none",
+              borderRight: content.anchor === "right" ? "1px solid rgba(140,220,255,0.3)" : "none",
+              paddingLeft: content.anchor === "left" ? "1rem" : 0,
+              paddingRight: content.anchor === "right" ? "1rem" : 0,
+            }}
           >
             {content.body}
           </p>
         </div>
       </div>
 
-      {/* stage index ticks, vertical, right side */}
       <div className="absolute top-1/2 right-8 -translate-y-1/2 hidden lg:flex flex-col items-end gap-4">
         {STAGES.map((s, i) => (
           <div key={s.content.id} className="flex items-center gap-2">
@@ -252,7 +283,6 @@ export default function SpaceOverlay() {
         ))}
       </div>
 
-      {/* skill manifest, bottom-left */}
       <div className="absolute bottom-10 left-14 hidden lg:block">
         <p className="text-[9px] tracking-[0.3em] mb-2" style={{ color: "rgba(140,220,255,0.5)" }}>
           STACK.MANIFEST
@@ -266,7 +296,6 @@ export default function SpaceOverlay() {
         </div>
       </div>
 
-      {/* bottom-center control hint */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-center">
         <p className="text-[10px] tracking-[0.4em]" style={{ color: "rgba(200,230,255,0.4)" }}>
           SCROLL // TRAVEL &nbsp;·&nbsp; DRAG // ORBIT

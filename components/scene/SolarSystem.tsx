@@ -18,7 +18,7 @@ import Jupiter from "../planets/Jupiter";
 import Saturn from "../planets/Saturn";
 import AsteroidBelt from "../planets/AsteroidBelt";
 import Atmosphere from "../planets/Atmosphere";
-import Comet from "../effects/Comet";
+import AlienShuttle from "../effects/AlienShuttle"; 
 
 export default function SolarSystem({ active = true }: { active?: boolean }) {
   const sunRef = useRef<Mesh>(null);
@@ -60,9 +60,7 @@ export default function SolarSystem({ active = true }: { active?: boolean }) {
       <PlanetOrbit radius={26} speed={0.08} offset={5.5}>
         <Saturn />
       </PlanetOrbit>
-
-      <Comet  />
-
+    <AlienShuttle /> 
       <Nebula />
       <StarField />
     </>

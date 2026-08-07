@@ -8,7 +8,7 @@ export type CameraEndpoint = {
 
 // SolarSystem camera, from app/animate/page.tsx — the wide establishing view.
 export const SPACE_ENDPOINT: CameraEndpoint = {
-  position: [0, 6, 22],
+  position: [0, 14, 42],
   lookAt: [0, 0, 0],
   fov: 50,
 };
