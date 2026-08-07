@@ -13,7 +13,7 @@ const Sun = forwardRef<Mesh>((_, ref) => {
     <group>
       <mesh ref={ref}>
         <sphereGeometry args={[2, 64, 64]} />
-        <meshStandardMaterial map={texture} emissive="#ff6600" emissiveIntensity={4} toneMapped={false} />
+        <meshStandardMaterial map={texture} emissive="#ff6600" emissiveIntensity={3.5} toneMapped={false} />
       </mesh>
       <Atmosphere radius={2} color="#ffaa44" intensity={1.4} scale={1.25} />
       <Atmosphere radius={2} color="#ff5500" intensity={0.7} scale={1.6} />

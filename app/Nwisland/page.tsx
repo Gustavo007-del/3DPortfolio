@@ -53,7 +53,7 @@ export default function Page() {
           <ChapterPanel />
           <AudioButton />
           <AudioController />
-          <Leva hidden />
+          {/* <Leva hidden /> */}
           <AudioDebug />
           {/* <CameraDebug /> */}
         </div>

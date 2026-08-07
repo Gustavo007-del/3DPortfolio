@@ -47,7 +47,7 @@ const FRAGMENT_SHADER = /* glsl */ `
 
 // How far (radians) the field tilts at full cursor deflection — small on
 // purpose, this should read as "distant parallax," not "the sky is spinning."
-const PARALLAX_STRENGTH = 0.06;
+const PARALLAX_STRENGTH = 0.01;
 // Higher = snappier follow, lower = more of a lazy drift-behind feel.
 const PARALLAX_EASE = 2.2;
 
@@ -74,7 +74,7 @@ export default function StarField() {
     const colors = new Float32Array(COUNT * 3);
 
     for (let i = 0; i < COUNT; i++) {
-      const radius = 60 + Math.random() * 220;
+      const radius = 200 + Math.random() * 220;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
 

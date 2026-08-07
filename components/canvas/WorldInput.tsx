@@ -21,8 +21,8 @@ export default function WorldInput() {
       eventsTarget: window,
       orientation: "vertical",
       smoothWheel: true,
-      wheelMultiplier: -1,
-      touchMultiplier: -1,
+      wheelMultiplier: 1,
+      touchMultiplier: 1,
     });
     lenisRef.current = lenis;
 

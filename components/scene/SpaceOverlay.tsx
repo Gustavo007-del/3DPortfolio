@@ -14,7 +14,7 @@ const STAGES: { at: number; content: StageContent }[] = [
       id: "identity",
       eyebrow: "IDENTITY.SYS // 01",
       heading: "ASA SHIJIL",
-      body: "Backend engineer. Python & Django. Builds systems that hold up in production.",
+      body: "Full Stack Developer crafting scalable web, mobile, and interactive 3D experiences. From backend architecture to immersive interfaces—I build products end to end.",
       anchor: "left",
       vertical: "top",
     },
@@ -24,10 +24,10 @@ const STAGES: { at: number; content: StageContent }[] = [
     content: {
       id: "build",
       eyebrow: "PAYLOAD.LOG // 02",
-      heading: "SYSTEMS SHIPPED",
-      body: "Booking engines, async job pipelines, live client infrastructure — deployed, not demo'd.",
+      heading: "FULL STACK. MOBILE. 3D.",
+      body: "Building modern SaaS platforms, mobile applications, enterprise dashboards, booking systems, AI-powered tools, and immersive web experiences that perform at scale.",
       anchor: "right",
-      vertical: "mid",
+      vertical: "top",
     },
   },
   {
@@ -35,10 +35,10 @@ const STAGES: { at: number; content: StageContent }[] = [
     content: {
       id: "render",
       eyebrow: "RENDER.PIPE // 03",
-      heading: "THIS SCENE IS THE PORTFOLIO",
-      body: "React Three Fiber, custom GLSL, and a camera you're flying right now.",
+      heading: "ENGINEERING THE EXPERIENCE",
+      body: "React • Next.js • React Native • Django • Python • Three.js • React Three Fiber • Docker • Kubernetes • Celery • Redis • PostgreSQL • REST APIs",
       anchor: "left",
-      vertical: "mid",
+      vertical: "top",
     },
   },
   {
@@ -46,15 +46,15 @@ const STAGES: { at: number; content: StageContent }[] = [
     content: {
       id: "approach",
       eyebrow: "NAV.APPROACH // 04",
-      heading: "DESTINATION LOCKED",
-      body: "Keep scrolling. Clearing atmosphere ahead.",
+      heading: "BUILD. OPTIMIZE. SHIP.",
+      body: "Clean architecture, scalable systems, responsive interfaces, and maintainable code. Every project is engineered for performance, reliability, and exceptional user experience.",
       anchor: "right",
       vertical: "top",
     },
   },
 ];
 
-const SKILLS = ["PYTHON", "DJANGO", "R3F", "NEXT.JS", "POSTGRES", "CELERY"];
+const SKILLS = ["PYTHON", "DJANGO", "R3F", "NEXT.JS", "POSTGRES", "CELERY", "REACT NATIVE", "DOCKER", "KUBERNETES", "REDIS","TAILWINDCSS","TYPESCRIPT"];
 
 function useTypewriter(text: string, speed = 22) {
   const [out, setOut] = useState("");
@@ -77,7 +77,7 @@ function useTypewriter(text: string, speed = 22) {
 function getPositionStyle(anchor: Anchor, vertical: "top" | "mid"): React.CSSProperties {
   const base: React.CSSProperties = { position: "absolute", maxWidth: "28rem" };
   if (vertical === "top") {
-    base.top = "9rem"; // raised from the old ~38% center — sits higher, under the HUD readouts
+    base.top = "6rem"; // raised from the old ~38% center — sits higher, under the HUD readouts
   } else {
     base.top = "50%";
     base.transform = "translateY(-50%)";
@@ -232,7 +232,7 @@ export default function SpaceOverlay() {
             {content.anchor === "right" && <div className="w-6 h-[1px]" style={{ background: "rgba(140,220,255,0.6)" }} />}
           </div>
           <h1
-            className="text-4xl md:text-6xl font-bold leading-[1.05]"
+            className="mt-4 text-sm md:text-[25px]"
             style={{
               color: "#f2fbff",
               textShadow: "0 0 20px rgba(120,220,255,0.45), 0 0 60px rgba(80,160,255,0.25)",
@@ -247,15 +247,28 @@ export default function SpaceOverlay() {
             />
           </h1>
           <p
-            className="mt-4 text-sm md:text-base"
-            style={{
-              color: "rgba(210,235,255,0.7)",
-              borderLeft: content.anchor === "left" ? "1px solid rgba(140,220,255,0.3)" : "none",
-              borderRight: content.anchor === "right" ? "1px solid rgba(140,220,255,0.3)" : "none",
-              paddingLeft: content.anchor === "left" ? "1rem" : 0,
-              paddingRight: content.anchor === "right" ? "1rem" : 0,
-            }}
-          >
+  className="mt-4 text-xs md:text-[13px] font-light"
+  style={{
+    color: "rgba(210,235,255,0.72)",
+    lineHeight: 1.9,
+    letterSpacing: "0.03em",
+    textAlign: "justify",
+    maxWidth: "34rem",
+    textWrap: "pretty",
+    hyphens: "auto",
+
+    borderLeft: content.anchor === "left"
+      ? "1px solid rgba(140,220,255,0.3)"
+      : "none",
+
+    borderRight: content.anchor === "right"
+      ? "1px solid rgba(140,220,255,0.3)"
+      : "none",
+
+    paddingLeft: content.anchor === "left" ? "1rem" : 0,
+    paddingRight: content.anchor === "right" ? "1rem" : 0,
+  }}
+>
             {content.body}
           </p>
         </div>

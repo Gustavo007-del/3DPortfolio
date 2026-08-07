@@ -1,3 +1,4 @@
+// components/LoadingScreen.tsx
 "use client";
 
 interface LoadingScreenProps {
@@ -14,7 +15,7 @@ export default function LoadingScreen({ progress, visible }: LoadingScreenProps)
         position: "fixed",
         inset: 0,
         zIndex: 100,
-        background: "#050510",
+        background: "#050505",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -24,111 +25,129 @@ export default function LoadingScreen({ progress, visible }: LoadingScreenProps)
         opacity: 1,
       }}
     >
-      {/* Animated star field background */}
+      {/* Faint radial vignette, matches the reference's near-black backdrop */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: "radial-gradient(ellipse at center, #0a0a2a 0%, #050510 70%)",
+          background: "radial-gradient(ellipse at center, #0d0d0d 0%, #050505 75%)",
         }}
       />
 
-      {/* Orbiting loader */}
-      <div style={{ position: "relative", width: 80, height: 80, marginBottom: 32 }}>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: "50%",
-            border: "2px solid rgba(255,255,255,0.05)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: "50%",
-            border: "2px solid transparent",
-            borderTopColor: "#4a90d9",
-            borderRightColor: "#4a90d9",
-            animation: "loaderSpin 1.2s linear infinite",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: 12,
-            borderRadius: "50%",
-            border: "2px solid transparent",
-            borderBottomColor: "#ffaa33",
-            borderLeftColor: "#ffaa33",
-            animation: "loaderSpin 0.8s linear infinite reverse",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "#ffffff",
-            transform: "translate(-50%, -50%)",
-            boxShadow: "0 0 12px rgba(255,255,255,0.5)",
-          }}
-        />
-      </div>
-
-      <h2
-        style={{
-          color: "#ffffff",
-          fontSize: 20,
-          fontWeight: 600,
-          letterSpacing: 4,
-          textTransform: "uppercase",
-          marginBottom: 16,
-          fontFamily: "Inter, sans-serif",
-        }}
-      >
-        Loading Universe
-      </h2>
-
-      {/* Progress bar */}
+      {/* 4-square logo mark, staggered scale-in then a slow continuous pulse */}
       <div
         style={{
-          width: 200,
-          height: 2,
-          background: "rgba(255,255,255,0.1)",
-          borderRadius: 1,
-          overflow: "hidden",
-          marginBottom: 12,
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 44px)",
+          gridTemplateRows: "repeat(2, 44px)",
+          gap: 10,
+          marginBottom: 40,
         }}
       >
-        <div
-          style={{
-            width: `${progress}%`,
-            height: "100%",
-            background: "linear-gradient(90deg, #4a90d9, #ffaa33)",
-            borderRadius: 1,
-            transition: "width 0.3s ease",
-          }}
-        />
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            style={{
+              width: 44,
+              height: 44,
+              background: "#ffffff",
+              opacity: 0,
+              animation: `squareIn 0.5s ease forwards ${i * 0.12}s, squarePulse 2.4s ease-in-out infinite ${1.2 + i * 0.15}s`,
+            }}
+          />
+        ))}
       </div>
+
+      <h1
+        style={{
+          color: "#ffffff",
+          fontSize: 26,
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          marginBottom: 10,
+          fontFamily: "Inter, sans-serif",
+          opacity: 0,
+          animation: "textIn 0.6s ease forwards 0.5s",
+        }}
+      >
+        Asa Shijil
+      </h1>
 
       <p
         style={{
-          color: "rgba(255,255,255,0.35)",
-          fontSize: 11,
-          letterSpacing: 2,
+          color: "rgba(255,255,255,0.45)",
+          fontSize: 12,
+          letterSpacing: 4,
           textTransform: "uppercase",
-          fontFamily: "monospace",
+          marginBottom: 56,
+          fontFamily: "Inter, sans-serif",
+          opacity: 0,
+          animation: "textIn 0.6s ease forwards 0.65s",
         }}
       >
-        {Math.round(progress)}%
+        Backend Engineer &nbsp;·&nbsp; Creative Developer
       </p>
 
+      {/* Thin ring spinner, single stroke, matches the reference's understated feel */}
+      <div
+        style={{
+          position: "relative",
+          width: 46,
+          height: 46,
+          marginBottom: 48,
+          opacity: 0,
+          animation: "textIn 0.6s ease forwards 0.8s",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            border: "1.5px solid rgba(255,255,255,0.08)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            border: "1.5px solid transparent",
+            borderTopColor: "rgba(255,255,255,0.9)",
+            animation: "loaderSpin 1.1s linear infinite",
+          }}
+        />
+      </div>
+
+      {/* <p
+        style={{
+          position: "absolute",
+          bottom: 48,
+          color: "rgba(255,255,255,0.3)",
+          fontSize: 11,
+          letterSpacing: 3,
+          textTransform: "uppercase",
+          fontFamily: "monospace",
+          opacity: 0,
+          animation: "textIn 0.6s ease forwards 1s",
+        }}
+      >
+        Powered by Curiosity &amp; Code — {Math.round(progress)}%
+      </p> */}
+
       <style>{`
+        @keyframes squareIn {
+          from { opacity: 0; transform: scale(0.4); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes squarePulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
+        }
+        @keyframes textIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @keyframes loaderSpin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }

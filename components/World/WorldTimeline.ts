@@ -1,3 +1,4 @@
+// components/World/WorldTimeline.ts
 import { DEFAULT_CAMERA } from "@/lib/camera";
 
 export type CameraEndpoint = {
@@ -8,7 +9,18 @@ export type CameraEndpoint = {
 
 // SolarSystem camera, from app/animate/page.tsx — the wide establishing view.
 export const SPACE_ENDPOINT: CameraEndpoint = {
-  position: [0, 14, 42],
+  position: [0, 1, 42],
+  lookAt: [0, 0, 0],
+  fov: 500,
+};
+
+// Reached by scrolling BACKWARD past the normal start (progress < 0) —
+// pulls the camera out further for a wide, distant establishing view of the
+// whole solar system. Position is deliberately NOT derived from
+// SPACE_ENDPOINT (unlike SPACE_ZOOM_ENDPOINT below), so it can be tuned
+// completely independently — bigger magnitude = further pulled back.
+export const SPACE_FAR_ENDPOINT: CameraEndpoint = {
+  position: [0, 22, 70],
   lookAt: [0, 0, 0],
   fov: 50,
 };
@@ -47,6 +59,12 @@ export const ISLAND_ENDPOINT: CameraEndpoint = {
 // Leva value; if the jump ever becomes visible again, check this pairing first.
 export const ENTER_ISLAND_THRESHOLD = 0.45;
 
+// Lower bound of worldProgress reachable by scrolling backward. Must match
+// PROGRESS_MIN in WorldInput.tsx exactly — that file is what actually maps
+// scroll position into this range, this file is what interprets it visually.
+// If you change one, change the other.
+export const PROGRESS_FAR_BOUND = -0.3;
+
 export const WORLD_FAR = 6000;
 
 function lerp(a: number, b: number, t: number) {
@@ -65,7 +83,8 @@ export function easeInOutCubic(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-// Two-segment piecewise curve:
+// Three-segment piecewise curve:
+//   [PROGRESS_FAR_BOUND, 0]      -> pull OUT from spacePosition toward SPACE_FAR_ENDPOINT (backward scroll)
 //   [0, ENTER_ISLAND_THRESHOLD]  -> zoom IN from spacePosition toward spaceZoomPosition (close to Sun)
 //   [ENTER_ISLAND_THRESHOLD, 1]  -> fade-masked jump from spaceZoomPosition to ISLAND_ENDPOINT
 // spacePosition/spaceZoomPosition optionally override the two Space-side endpoints
@@ -82,7 +101,17 @@ export function getWorldCameraState(
   spacePosition: [number, number, number] = SPACE_ENDPOINT.position,
   spaceZoomPosition: [number, number, number] = SPACE_ZOOM_ENDPOINT.position
 ): CameraEndpoint {
-  const p = Math.min(1, Math.max(0, progress));
+  const p = Math.min(1, Math.max(PROGRESS_FAR_BOUND, progress));
+
+  // Backward-scroll segment: pull out toward the distant establishing view.
+  if (p < 0) {
+    const localT = easeInOutCubic((p - PROGRESS_FAR_BOUND) / (0 - PROGRESS_FAR_BOUND));
+    return {
+      position: lerpVec3(SPACE_FAR_ENDPOINT.position, spacePosition, localT),
+      lookAt: SPACE_ENDPOINT.lookAt,
+      fov: lerp(SPACE_FAR_ENDPOINT.fov, SPACE_ENDPOINT.fov, localT),
+    };
+  }
 
   if (p <= ENTER_ISLAND_THRESHOLD) {
     const localT = easeInOutCubic(p / ENTER_ISLAND_THRESHOLD);
@@ -100,6 +129,7 @@ export function getWorldCameraState(
     fov: lerp(SPACE_ENDPOINT.fov, ISLAND_ENDPOINT.fov, localT),
   };
 }
+
 // Local 0..1 "how far through the approach to Island" — decoupled from raw
 // worldProgress reaching a literal 1, so `islandArrivalSpan` (Leva, in
 // TransitionManager's config) can control how MUCH scroll past
@@ -112,6 +142,7 @@ export function getIslandArrivalT(progress: number, arrivalSpan: number): number
   const raw = (progress - ENTER_ISLAND_THRESHOLD) / span;
   return Math.min(1, Math.max(0, raw));
 }
+
 export const PROGRESS_SMOOTH_SPEED = 3.5;
 
 export function smoothProgress(current: number, target: number, delta: number, speed = PROGRESS_SMOOTH_SPEED) {
