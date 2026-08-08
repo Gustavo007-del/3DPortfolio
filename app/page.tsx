@@ -24,7 +24,7 @@ export default function Page() {
       <LoadingScreen progress={progress} visible={!assetsLoaded} />
       <LoadingTracker onProgress={handleProgress} onLoaded={handleAssetsLoaded} />
       <WorldManager />
-      <Leva />
+      {/* <Leva /> */}
     </>
   );
 }
