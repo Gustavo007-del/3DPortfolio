@@ -9,7 +9,7 @@ import { CometTrailMaterial } from "./CometMaterial"; // reused for the engine t
 const TRAIL_LENGTH = 40;
 const CYCLE_SECONDS = 24;
 const FADE_FRACTION = 0.15;
-
+  
 function randomOrbit() {
   return {
     semiMajor: 30 + Math.random() * 25,
@@ -34,6 +34,9 @@ function ellipsePosition(t: number, orbit: ReturnType<typeof randomOrbit>) {
 }
 
 export default function AlienShuttle() {
+  const boostRef = useRef(0); // 0..1, decays after trigger
+const BOOST_STRENGTH = 3.5; // multiplies angular speed while active
+const BOOST_DECAY = 0.6;  
   const shipRef = useRef<THREE.Group>(null);
   const hullRef = useRef<THREE.Mesh>(null);
   const domeMatRef = useRef<THREE.MeshStandardMaterial>(null);
@@ -96,7 +99,18 @@ export default function AlienShuttle() {
     const pos = ellipsePosition(trueAnomalyRef.current, orbit);
     const dist = pos.length();
     const angularSpeed = THREE.MathUtils.clamp(30 / (dist * dist), 0.05, 1.2);
-    trueAnomalyRef.current += angularSpeed * delta;
+
+    const boostMultiplier = 1 + boostRef.current * BOOST_STRENGTH;
+trueAnomalyRef.current += angularSpeed * boostMultiplier * delta;
+if (boostRef.current > 0) boostRef.current = Math.max(0, boostRef.current - BOOST_DECAY * delta);
+
+// Also brighten the trail/lights while boosting — inside the same useFrame,
+// where you set light intensity:
+lightsRef.current.forEach((light, i) => {
+  if (!light) return;
+  const blink = Math.sin(state.clock.elapsedTime * 4 + i * Math.PI) > 0.5 ? 1 : 0.15;
+  light.intensity = blink * (1.5 + boostRef.current * 4) * envelope;
+});
 
     if (shipRef.current) {
       shipRef.current.position.copy(pos);
@@ -126,7 +140,7 @@ export default function AlienShuttle() {
 
     // Pulsing dome material + blinking hull lights.
     if (domeMatRef.current) {
-      domeMatRef.current.emissiveIntensity = 1.2 + Math.sin(state.clock.elapsedTime * 2.5) * 0.4;
+      domeMatRef.current.emissiveIntensity = 1.2 + Math.sin(state.clock.elapsedTime * 2.5) * 0.4 + boostRef.current * 3;
     }
     lightsRef.current.forEach((light, i) => {
       if (!light) return;
@@ -162,7 +176,16 @@ export default function AlienShuttle() {
     <group>
       <group ref={shipRef}>
         {/* Saucer hull */}
-        <mesh ref={hullRef} scale={[1, 0.32, 1]}>
+        <mesh
+  ref={hullRef}
+  scale={[1, 0.32, 1]}
+  onClick={(e) => {
+    e.stopPropagation();
+    boostRef.current = 1;
+  }}
+  onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = "pointer"; }}
+  onPointerOut={() => { document.body.style.cursor = "auto"; }}
+>
           <sphereGeometry args={[0.9, 24, 16]} />
           <meshStandardMaterial
             color="#6b7280"

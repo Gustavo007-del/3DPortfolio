@@ -43,6 +43,7 @@ export type TransitionConfig = {
   loadThreshold: number; // local cloud progress (0-1) at which asset loading is triggered
   cloudScrollCoupling: number; // how strongly scroll SPEED (not just position) drives cloud movement
   islandArrivalSpan: number;  
+  
 };
 
 export const DEFAULT_TRANSITION_CONFIG: TransitionConfig = {
