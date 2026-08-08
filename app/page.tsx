@@ -3,7 +3,6 @@
 
 import { useState, useCallback } from "react";
 import WorldManager from "@/components/World/WorldManager";
-import ResumeButton from "@/components/Buttons/ResumeButton";
 import LoadingScreen from "@/components/scene/LoadingScreen";
 import LoadingTracker from "@/components/scene/LoadingTracker"; // adjust path to wherever this actually lives
 import { Leva } from "leva";
@@ -25,7 +24,6 @@ export default function Page() {
       <LoadingScreen progress={progress} visible={!assetsLoaded} />
       <LoadingTracker onProgress={handleProgress} onLoaded={handleAssetsLoaded} />
       <WorldManager />
-      <ResumeButton />
       {/* <Leva /> */}
     </>
   );

@@ -1,6 +1,12 @@
 "use client";
 
+import { useWorldState } from "@/components/World/WorldState";
+
 export default function ResumeButton() {
+  const { phase } = useWorldState();
+
+  if (phase === "ISLAND" || phase === "TRANSITION_TO_ISLAND") return null;
+
   return (
     <div
       style={{
