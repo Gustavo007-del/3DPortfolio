@@ -36,7 +36,7 @@ const STAGES: { at: number; content: StageContent }[] = [
       id: "render",
       eyebrow: "RENDER.PIPE // 03",
       heading: "ENGINEERING THE EXPERIENCE",
-      body: "React • Next.js • React Native • Django • Python • Three.js • React Three Fiber • Docker • Kubernetes • Celery • Redis • PostgreSQL • REST APIs",
+      body: "React • Next.js • Django • Three.js • React Three Fiber • Docker • Kubernetes • Celery • Redis • Websockets",
       anchor: "left",
       vertical: "top",
     },
@@ -65,7 +65,7 @@ const STAGES: { at: number; content: StageContent }[] = [
   },
 ];
 
-const SKILLS = ["PYTHON", "DJANGO", "R3F", "NEXT.JS", "POSTGRES", "CELERY", "REACT NATIVE", "DOCKER", "KUBERNETES", "REDIS","TAILWINDCSS","TYPESCRIPT"];
+const SKILLS = ["DJANGO", "R3F","KUBERNETES", "REDIS","WEBSOCKETS"];
 
 function useTypewriter(text: string, speed = 22) {
   const [out, setOut] = useState("");
@@ -166,6 +166,7 @@ export default function SpaceOverlay() {
           to { opacity: 1; letter-spacing: 0.08em; }
         }
         .hud-fade-in { animation: hud-in 400ms ease forwards; }
+        
       `}</style>
 
       <div
@@ -200,7 +201,7 @@ export default function SpaceOverlay() {
           style={{ ...pos, borderColor: "rgba(140,220,255,0.5)", animation: "hud-flicker 5s ease-in-out infinite" }}
         />
       ))}
-
+    
       <div className="absolute top-8 left-14 hidden md:block" style={{ animation: "hud-flicker 7s ease-in-out infinite" }}>
         <p className="text-[10px] tracking-[0.3em]" style={{ color: "rgba(140,220,255,0.6)" }}>
           SOL.NAV — LIVE
