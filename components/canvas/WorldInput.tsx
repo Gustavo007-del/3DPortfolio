@@ -61,7 +61,7 @@ export default function WorldInput() {
       aria-hidden
       style={{ position: "fixed", inset: 0, opacity: 0, pointerEvents: "none", overflow: "auto", zIndex: -1 }}
     >
-      <div ref={contentRef} style={{ height: "900vh" }} />
+      <div ref={contentRef} style={{ height: "1100vh" }} />
     </div>
   );
 }

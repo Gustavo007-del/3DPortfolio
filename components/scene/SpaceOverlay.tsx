@@ -52,6 +52,17 @@ const STAGES: { at: number; content: StageContent }[] = [
       vertical: "top",
     },
   },
+  {
+    at: 0.39,
+    content: {
+      id: "empty",
+      eyebrow: "",
+      heading: "",
+      body: "",
+      anchor: "left",
+      vertical: "top",
+    },
+  },
 ];
 
 const SKILLS = ["PYTHON", "DJANGO", "R3F", "NEXT.JS", "POSTGRES", "CELERY", "REACT NATIVE", "DOCKER", "KUBERNETES", "REDIS","TAILWINDCSS","TYPESCRIPT"];

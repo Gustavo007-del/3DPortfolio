@@ -22,7 +22,7 @@ export default function Page() {
     <>
       <LoadingScreen progress={progress} visible={!loaded} />
       <WorldManager onProgress={handleProgress} onLoaded={handleLoaded} />
-      {/* <Leva /> */}
+      <Leva />
     </>
   );
 }

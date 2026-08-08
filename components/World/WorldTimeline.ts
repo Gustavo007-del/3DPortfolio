@@ -11,7 +11,7 @@ export type CameraEndpoint = {
 export const SPACE_ENDPOINT: CameraEndpoint = {
   position: [0, 1, 42],
   lookAt: [0, 0, 0],
-  fov: 500,
+  fov: 50,
 };
 
 // Reached by scrolling BACKWARD past the normal start (progress < 0) —
@@ -57,7 +57,7 @@ export const ISLAND_ENDPOINT: CameraEndpoint = {
 // will begin before clouds are dense enough to mask it. Nothing enforces this
 // automatically since one lives here as a constant and the other is a runtime
 // Leva value; if the jump ever becomes visible again, check this pairing first.
-export const ENTER_ISLAND_THRESHOLD = 0.45;
+export const ENTER_ISLAND_THRESHOLD = 0.84;
 
 // Lower bound of worldProgress reachable by scrolling backward. Must match
 // PROGRESS_MIN in WorldInput.tsx exactly — that file is what actually maps

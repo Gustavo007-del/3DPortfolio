@@ -46,7 +46,7 @@ export type TransitionConfig = {
 };
 
 export const DEFAULT_TRANSITION_CONFIG: TransitionConfig = {
-  cloudEntryProgress: 0.20,
+  cloudEntryProgress: 0.37,
   cloudExitProgress: 1.0,
   cloudLayerHeight: 55,
   cloudThickness: 45,
