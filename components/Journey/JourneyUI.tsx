@@ -58,7 +58,7 @@ export default function JourneyUI() {
               textTransform: "uppercase",
             }}
           >
-            A Journey Through My Work
+            island is in some remodelling!!!
           </div>
 
           <button

@@ -23,6 +23,8 @@ import CloudTransition from "@/components/World/Transition/CloudTransition";
 import LoadingTracker from "@/components/scene/LoadingTracker";
 import SpaceOverlay from "@/components/scene/SpaceOverlay";
 import ResumeButton from "@/components/Buttons/ResumeButton";
+import RoamCamera from "@/components/World/RoamCamera"; 
+import RoamButton from "@/components/Buttons/RoamButton";
 
 const Leva = dynamic(() => import("leva").then((m) => m.Leva), { ssr: false });
 const WorldDebug = dynamic(() => import("@/components/systems/WorldDebug"), { ssr: false });
@@ -79,6 +81,7 @@ export default function WorldManager({ onProgress, onLoaded }: WorldManagerProps
               >
                 <WindProvider>
                   <WorldCamera />
+                  <RoamCamera />
                   <CloudTransition />
                   <SpaceLayer />
                   <IslandLayer />
@@ -88,6 +91,7 @@ export default function WorldManager({ onProgress, onLoaded }: WorldManagerProps
 
               <WorldInput />
               <ResumeButton />
+              <RoamButton />
               <JourneyOverlay />
               <AudioButton />
               <AudioController />

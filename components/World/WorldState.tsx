@@ -9,6 +9,8 @@ export type WorldStateContextType = {
   cameraOwner: CameraOwner;
   progressRef: MutableRefObject<number>;
   targetProgressRef: MutableRefObject<number>;
+  roaming: boolean;              // ADD
+  setRoaming: (v: boolean) => void;
   setPhase: (phase: WorldPhase) => void;
   setCameraOwner: (owner: CameraOwner) => void;
   addTargetProgress: (delta: number) => void;
@@ -19,6 +21,8 @@ export type WorldStateContextType = {
 const WorldStateContext = createContext<WorldStateContextType | null>(null);
 
 export function WorldProvider({ children }: { children: ReactNode }) {
+  const [roaming, setRoamingState] = useState(false);
+  const setRoaming = useCallback((v: boolean) => setRoamingState(v), []);
   const [phase, setPhaseState] = useState<WorldPhase>("SPACE");
   const [cameraOwner, setCameraOwnerState] = useState<CameraOwner>("world");
   const progressRef = useRef(0);
@@ -33,7 +37,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const goToIsland = useCallback(() => { targetProgressRef.current = 1; setPhaseState("TRANSITION_TO_ISLAND"); }, []);
 
   return (
-    <WorldStateContext.Provider value={{ phase, cameraOwner, progressRef, targetProgressRef, setPhase, setCameraOwner, addTargetProgress, goToSpace, goToIsland }}>
+    <WorldStateContext.Provider value={{ phase, cameraOwner, progressRef, targetProgressRef, setPhase, setCameraOwner,roaming, setRoaming, addTargetProgress, goToSpace, goToIsland }}>
       {children}
     </WorldStateContext.Provider>
   );

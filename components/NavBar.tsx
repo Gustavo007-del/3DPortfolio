@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
 
 const links = ["About", "Skills", "Projects", "Timeline", "Stats", "Contact"]
 
@@ -40,6 +41,12 @@ export default function NavBar() {
               {l}
             </a>
           ))}
+          <Link
+            href="/projects"
+            className="px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white text-xs font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105"
+          >
+            All Projects →
+          </Link>
           <button
             onClick={() => setDark(d => !d)}
             className="ml-2 px-3 py-1.5 rounded-full border border-white/20 text-xs text-slate-300 hover:bg-white/10 transition-all"
@@ -69,6 +76,9 @@ export default function NavBar() {
                 {l}
               </a>
             ))}
+            <Link href="/projects" onClick={() => setOpen(false)} className="mt-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white text-sm font-semibold text-center">
+              All Projects →
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>

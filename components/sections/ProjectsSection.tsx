@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
 
 const projects = [
   {
@@ -108,6 +109,22 @@ export default function ProjectsSection() {
             </motion.div>
           ))}
         </AnimatePresence>
+      </motion.div>
+
+      {/* View All button */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="flex justify-center mt-12"
+      >
+        <Link
+          href="/projects"
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 transition-all duration-300"
+        >
+          View All Projects
+          <span className="group-hover:translate-x-1 transition-transform">→</span>
+        </Link>
       </motion.div>
     </section>
   )

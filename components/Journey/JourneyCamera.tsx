@@ -151,7 +151,7 @@ export default function JourneyCamera() {
 
   const frameCount = useRef(0);
 
-useFrame(({ camera }) => {
+  useFrame(({ camera }) => {
   frameCount.current++;
   // if (frameCount.current % 60 === 0) {
   //   console.log('[JourneyCamera:heartbeat]', frameCount.current, camera.position.toArray());

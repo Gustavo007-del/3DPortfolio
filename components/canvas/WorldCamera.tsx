@@ -38,7 +38,7 @@ const AUTO_ROTATE_SPEED = 0.05; // rad/sec, only while idle
 const POLAR_CLAMP = 0.15; // keeps camera from flipping over Sun's poles
 
 export default function WorldCamera() {
-  const { phase, cameraOwner, setPhase, setCameraOwner, progressRef, targetProgressRef } = useWorldState();
+  const { phase, cameraOwner, roaming, setPhase, setCameraOwner, progressRef, targetProgressRef } = useWorldState();
   const { corridorRef, insideCloudsRef, assetsReady, config } = useTransitionManager();
   const controls = useThree((s) => s.controls) as CameraControls | null;
   const gl = useThree((s) => s.gl);
@@ -86,8 +86,8 @@ export default function WorldCamera() {
   // Manual CameraControls only active in ISLAND, and only while World owns the camera.
   useEffect(() => {
     if (!controls) return;
-    controls.enabled = phase === "ISLAND" && started && !isTransitioning;
-  }, [controls, phase, started, isTransitioning]);
+    controls.enabled = roaming || (phase === "ISLAND" && started && !isTransitioning);
+  }, [controls, phase, started, isTransitioning, roaming]);
 
   // One-time hard sync when CameraControls takes over, so it doesn't snap from
   // wherever World's manual writes last left the camera.
@@ -137,6 +137,7 @@ export default function WorldCamera() {
   }, [gl]);
 
   useFrame((state, delta) => {
+    if (roaming) return;
     if (cameraOwner === "journey") return; // JourneyCamera's own useFrame owns the camera entirely.
 
     if (phase === "ISLAND") {
