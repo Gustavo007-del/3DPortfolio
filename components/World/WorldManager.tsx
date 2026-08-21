@@ -57,7 +57,7 @@ function IslandLayer() {
     <LODGroup group="island">
       <IslandScene active={active} />
       <AudioZones />
-      <JourneyCamera />
+      {active && <JourneyCamera />}
     </LODGroup>
   );
 }

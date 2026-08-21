@@ -8,22 +8,18 @@ import { useWorldState } from "@/components/World/WorldState";
 
 const MOVE_SPEED = 14;
 const DAMPING = 8;
-const ROAM_START_POSITION = [23, 40, 30] as const;
-const ROAM_START_LOOK_AT = [36, 50, 0] as const;
 
 export default function RoamCamera() {
-  const { roaming } = useWorldState();
+  const { roaming, phase, cameraOwner } = useWorldState();
   const { camera } = useThree();
   const controls = useRef<CameraControls>(null);
 
   const keys = useRef<Record<string, boolean>>({});
   const velocity = useRef(new THREE.Vector3());
-  const didInitializeRoam = useRef(false);
   const savedState = useRef<{ position: THREE.Vector3; quaternion: THREE.Quaternion } | null>(null);
+  const scratchForward = useRef(new THREE.Vector3());
+  const scratchTarget = useRef(new THREE.Vector3());
 
-  // Snapshot camera pose the moment roaming starts, restore it the moment
-  // roaming ends — so returning to scroll mode doesn't leave the camera
-  // stranded wherever the user wandered off to.
   useEffect(() => {
     if (roaming) {
       savedState.current = {
@@ -36,7 +32,7 @@ export default function RoamCamera() {
       savedState.current = null;
       velocity.current.set(0, 0, 0);
     }
-  }, [roaming, camera]);
+  }, [roaming, camera, phase, cameraOwner]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) { keys.current[e.code] = true; }
@@ -52,26 +48,10 @@ export default function RoamCamera() {
   useEffect(() => {
     const control = controls.current;
     if (!control) return;
+
     control.enabled = roaming;
+
     if (roaming) {
-      // Apply the configured pose directly before enabling controls. This
-      // prevents the previous CameraControls state from winning for a frame.
-      camera.position.set(...ROAM_START_POSITION);
-      camera.lookAt(...ROAM_START_LOOK_AT);
-      control.setLookAt(
-        ROAM_START_POSITION[0],
-        ROAM_START_POSITION[1],
-        ROAM_START_POSITION[2],
-        ROAM_START_LOOK_AT[0],
-        ROAM_START_LOOK_AT[1],
-        ROAM_START_LOOK_AT[2],
-        false
-      );
-      const actualLookAt = control.getTarget(new THREE.Vector3());
-      console.log("[RoamCamera] current roam view", {
-        position: camera.position.toArray(),
-        lookAt: actualLookAt.toArray(),
-      });
       control.minDistance = 2;
       control.maxDistance = 300;
       control.maxPolarAngle = Math.PI - 0.05;
@@ -79,36 +59,25 @@ export default function RoamCamera() {
     }
   }, [roaming, camera]);
 
-  
   useFrame((_, delta) => {
+    const control = controls.current;
+    if (!control) return;
+
     if (!roaming) {
-      didInitializeRoam.current = false;
+      camera.getWorldDirection(scratchForward.current);
+      scratchTarget.current
+        .copy(camera.position)
+        .addScaledVector(scratchForward.current, 10);
+      control.setPosition(camera.position.x, camera.position.y, camera.position.z, false);
+      control.setTarget(scratchTarget.current.x, scratchTarget.current.y, scratchTarget.current.z, false);
       return;
     }
 
-    if (!didInitializeRoam.current) {
-      const control = controls.current;
-      camera.position.set(...ROAM_START_POSITION);
-      camera.lookAt(...ROAM_START_LOOK_AT);
-      if (control) {
-        control.setLookAt(
-          ROAM_START_POSITION[0], ROAM_START_POSITION[1], ROAM_START_POSITION[2],
-          ROAM_START_LOOK_AT[0], ROAM_START_LOOK_AT[1], ROAM_START_LOOK_AT[2],
-          false
-        );
-      }
-      didInitializeRoam.current = true;
-    }
-
-    const forward = new THREE.Vector3();
-    camera.getWorldDirection(forward);
-    const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-
     const wish = new THREE.Vector3();
-    if (keys.current["KeyW"] || keys.current["ArrowUp"]) wish.add(forward);
-    if (keys.current["KeyS"] || keys.current["ArrowDown"]) wish.sub(forward);
-    if (keys.current["KeyD"] || keys.current["ArrowRight"]) wish.add(right);
-    if (keys.current["KeyA"] || keys.current["ArrowLeft"]) wish.sub(right);
+    if (keys.current["KeyW"] || keys.current["ArrowUp"]) wish.z += 1;
+    if (keys.current["KeyS"] || keys.current["ArrowDown"]) wish.z -= 1;
+    if (keys.current["KeyD"] || keys.current["ArrowRight"]) wish.x += 1;
+    if (keys.current["KeyA"] || keys.current["ArrowLeft"]) wish.x -= 1;
     if (keys.current["Space"]) wish.y += 1;
     if (keys.current["ShiftLeft"] || keys.current["ControlLeft"]) wish.y -= 1;
 
@@ -116,7 +85,9 @@ export default function RoamCamera() {
 
     const t = 1 - Math.exp(-DAMPING * delta);
     velocity.current.lerp(wish, t);
-    camera.position.addScaledVector(velocity.current, delta);
+
+    control.forward(velocity.current.z * delta, false);
+    control.truck(velocity.current.x * delta, velocity.current.y * delta, false);
   });
 
   return <CameraControls ref={controls} makeDefault enabled={false} smoothTime={0.15} />;
