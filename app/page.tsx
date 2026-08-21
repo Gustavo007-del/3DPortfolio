@@ -1,30 +1,53 @@
-// app/page.tsx
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import WorldManager from "@/components/World/WorldManager";
 import LoadingScreen from "@/components/scene/LoadingScreen";
-import LoadingTracker from "@/components/scene/LoadingTracker"; // adjust path to wherever this actually lives
-import { Leva } from "leva";
+import LoadingTracker from "@/components/scene/LoadingTracker";
+
+const MIN_LOADING_TIME = 8000;
 
 export default function Page() {
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [timeElapsed, setTimeElapsed] = useState(false);
 
-  const handleProgress = useCallback((p: number) => {
-    setProgress(p);
+  const handleProgress = useCallback((value: number) => {
+    setProgress(value);
   }, []);
 
   const handleAssetsLoaded = useCallback(() => {
     setAssetsLoaded(true);
   }, []);
 
+  // Minimum loading time (10s)
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setTimeElapsed(true);
+    }, MIN_LOADING_TIME);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  // BOTH conditions must be satisfied
+  const loadingComplete = assetsLoaded && timeElapsed;
+
   return (
     <>
-      <LoadingScreen progress={progress} visible={!assetsLoaded} />
-      <LoadingTracker onProgress={handleProgress} onLoaded={handleAssetsLoaded} />
-      <WorldManager />
-      {/* <Leva /> */}
+      <LoadingScreen
+        progress={progress}
+        visible={!loadingComplete}
+        complete={loadingComplete}
+      />
+
+      <LoadingTracker
+        onProgress={handleProgress}
+        onLoaded={handleAssetsLoaded}
+      />
+
+      <WorldManager active={loadingComplete} />
     </>
   );
 }

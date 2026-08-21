@@ -23,7 +23,7 @@ import CloudTransition from "@/components/World/Transition/CloudTransition";
 import LoadingTracker from "@/components/scene/LoadingTracker";
 import SpaceOverlay from "@/components/scene/SpaceOverlay";
 import ResumeButton from "@/components/Buttons/ResumeButton";
-import RoamCamera from "@/components/World/RoamCamera"; 
+import RoamCamera from "@/components/World/RoamCamera";
 import RoamButton from "@/components/Buttons/RoamButton";
 
 const Leva = dynamic(() => import("leva").then((m) => m.Leva), { ssr: false });
@@ -65,9 +65,21 @@ function IslandLayer() {
 interface WorldManagerProps {
   onProgress?: (progress: number) => void;
   onLoaded?: () => void;
+  /**
+   * Controls the Canvas render loop. While false (e.g. during the loading
+   * screen), the Canvas uses frameloop="demand" so assets still load and
+   * the scene graph still builds, but nothing animates/re-renders every
+   * frame — avoiding GPU contention with the loading screen's own WebGL
+   * canvas. Flip to true once loading is fully complete.
+   */
+  active?: boolean;
 }
 
-export default function WorldManager({ onProgress, onLoaded }: WorldManagerProps) {
+export default function WorldManager({
+  onProgress,
+  onLoaded,
+  active = true,
+}: WorldManagerProps) {
   return (
     <WorldProvider>
       <TransitionManagerProvider>
@@ -76,6 +88,7 @@ export default function WorldManager({ onProgress, onLoaded }: WorldManagerProps
             <div className="relative w-screen h-screen overflow-hidden" style={{ background: "#050510" }}>
               <Canvas
                 shadows
+                frameloop={active ? "always" : "demand"}
                 camera={{ position: [0, 6, 22], fov: 50, far: 6000 }}
                 gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
               >
