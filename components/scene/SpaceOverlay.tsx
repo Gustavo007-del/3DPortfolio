@@ -323,7 +323,12 @@ export default function SpaceOverlay() {
 
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-center">
         <p className="text-[10px] tracking-[0.4em]" style={{ color: "rgba(200,230,255,0.4)" }}>
-          SCROLL // TRAVEL &nbsp;·&nbsp; DRAG // ORBIT
+          {liveProgress < 0.05
+            ? "SCROLL DOWN TO EXPLORE"
+            : liveProgress > 0.94
+              ? "SCROLL UP TO REVISIT"
+              : "KEEP SCROLLING TO CONTINUE"}
+          &nbsp;·&nbsp; DRAG // ORBIT
         </p>
       </div>
     </div>
