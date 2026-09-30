@@ -6,20 +6,11 @@ import { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-const WAVE_LAYERS = [
-  { dirX: 1.0, dirY: 0.25, wavelength: 140, amplitude: 0.55, steepness: 0.55, speed: 0.9 },
-  { dirX: 0.55, dirY: -0.85, wavelength: 65, amplitude: 0.28, steepness: 0.45, speed: 1.35 },
-  { dirX: -0.4, dirY: 0.9, wavelength: 32, amplitude: 0.13, steepness: 0.35, speed: 1.9 },
-  { dirX: 0.15, dirY: -0.55, wavelength: 16, amplitude: 0.06, steepness: 0.25, speed: 2.6 },
-].map((w) => {
-  const len = Math.hypot(w.dirX, w.dirY) || 1;
-  return {
-    ...w,
-    dirX: w.dirX / len,
-    dirY: w.dirY / len,
-    k: (2 * Math.PI) / w.wavelength,
-  };
-});
+// WAVE_LAYERS lives in waterSampler.ts so boat idle motion can sample the
+// same wave field on the CPU (PLAN.md §6.1).
+import { WAVE_LAYERS, setWaterConfig } from "./waterSampler";
+
+void WAVE_LAYERS;
 
 export default function WaterPlaneController() {
   const geoRef = useRef<THREE.PlaneGeometry>(null!);
@@ -160,6 +151,17 @@ export default function WaterPlaneController() {
 
     recomputeNormals: true,
   });
+
+  useEffect(() => {
+    // Keep the CPU sampler in sync with the leva-driven wave params.
+    setWaterConfig({
+      posY,
+      waveEnabled,
+      waveHeightScale,
+      waveChoppiness,
+      waveSpeedScale,
+    });
+  }, [posY, waveEnabled, waveHeightScale, waveChoppiness, waveSpeedScale]);
 
   useEffect(() => {
     if (!geoRef.current) return;

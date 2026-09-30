@@ -17,6 +17,7 @@ import CameraDebug from "@/components/Journey/CameraDebug";
 import ChapterPanel from "@/components/Journey/ChapterPanel";
 import { WindProvider } from "@/components/fire/WindContext";
 import AudioZones from "@/components/Island/AudioZones";
+import ShipwreckHotspot from "@/components/Island/ShipwreckHotspot";
 
 const Leva = dynamic(
   () => import("leva").then((m) => m.Leva),
@@ -51,6 +52,8 @@ export default function Page() {
 
           <JourneyUI />
           <ChapterPanel />
+          {/* Shipwreck hotspot UI — DOM, must be outside the Canvas (PLAN §6.2) */}
+          <ShipwreckHotspot />
           <AudioButton />
           <AudioController />
           {/* <Leva hidden /> */}

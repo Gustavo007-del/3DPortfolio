@@ -5,6 +5,12 @@ import { useEffect, useState } from "react";
 import { useGLTF } from "@react-three/drei";
 import gsap from "gsap";
 import Mist from "@/components/fire/Mist";
+import FortEffectsController, {
+  registerFortScene,
+  releaseFortScene,
+} from "./FortEffectsController";
+// NOTE: ShipwreckHotspot is DOM and must live OUTSIDE the R3F Canvas —
+// it is mounted by WorldManager (journey overlay) and app/Nwisland directly.
 import GradientSkyController from "./GradientSkyController";
 import SceneAtmosphereController from "./SceneAtmosphereController";
 import LightController from "./LightController";
@@ -63,6 +69,11 @@ function Mountain({
 
     onRocksReady(rocks);
 
+    // Register the scene with the fort interaction system (boat idle motion,
+    // cursor lens, sway, fire flicker, shipwreck hotspot). Cleanup releases it
+    // so a dead scene is never animated.
+    registerFortScene(scene);
+    return () => releaseFortScene();
     }, [scene, onRocksReady]);
  return <primitive object={scene} />;
 }
@@ -90,6 +101,9 @@ export default function IslandScene({ active = true }: { active?: boolean }) {
       {/* <FireflyController />     */}
        <BirdDebug />
       <ParticleController debugEnabled={process.env.NODE_ENV==="development"} />
+
+      {/* Fort idle motion + cursor magnification lens (single transform writer). */}
+      <FortEffectsController active={active} />
 
 </>
   );
