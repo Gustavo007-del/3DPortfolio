@@ -14,28 +14,25 @@ import {
   SPACE_ZOOM_ENDPOINT,
   ENTER_ISLAND_THRESHOLD,
   getIslandArrivalT,
-} from "@/components/World//WorldTimeline";
+} from "@/components/World/WorldTimeline";
 import { useJourney } from "@/components/Journey/JourneyProvider";
 import { useTransitionManager } from "@/components/World/Transition/TransitionManager";
 import { computeLookAtQuaternion } from "@/components/Journey/cameraHelpers";
 
 const ARRIVED_EPSILON = 0.001;
-// Margin below ENTER_ISLAND_THRESHOLD required before a transition phase is
-// allowed to fall back to SPACE. Without this, progress hovering within a
-// hair of the threshold (common with exponential smoothing) can flicker
-// TRANSITION_TO_ISLAND/SPACE <-> SPACE rapidly — reads as a stuck or
-// skipped phase.
 const PHASE_HYSTERESIS = 0.01;
-
-// Distance (CameraControls.distance) beyond which continued outward wheel scroll
-// while in ISLAND triggers exit back to SPACE. Tune against Island's real scale.
 const ISLAND_EXIT_DISTANCE = 40;
 
-// Drag-to-orbit tuning (SPACE phase only — mirrors the old OrbitControls feel
-// from app/animate/page.tsx: autoRotate + drag override + polar clamp).
 const DRAG_SENSITIVITY = 0.005;
-const AUTO_ROTATE_SPEED = 0.05; // rad/sec, only while idle
-const POLAR_CLAMP = 0.15; // keeps camera from flipping over Sun's poles
+const POLAR_CLAMP = 0.15;
+
+// Lenis (WorldInput) already smooths the scroll. This is only a light follow to hide
+// frame quantisation — the old 3.5 stacked a second ~0.3s smoothing layer on top of
+// Lenis, which is what made scrolling feel mushy/laggy and slow to reverse.
+const SCROLL_FOLLOW_SPEED = 18;
+
+// Clamp frame delta so one slow frame (shader compile, GC) can't make the camera jump.
+const MAX_DT = 0.05;
 
 export default function WorldCamera() {
   const { phase, cameraOwner, roaming, setPhase, setCameraOwner, progressRef, targetProgressRef } = useWorldState();
@@ -45,9 +42,6 @@ export default function WorldCamera() {
   const hasSyncedIslandEntry = useRef(false);
   const { started, isTransitioning } = useJourney();
 
-  // Base spherical (angles only) from SPACE_ENDPOINT — drag/auto-rotate offsets
-  // apply to these angles, then get combined with each endpoint's own radius,
-  // so the wide and zoomed-in Space positions always rotate together.
   const baseSpherical = useRef(
     new THREE.Spherical().setFromVector3(new THREE.Vector3(...SPACE_ENDPOINT.position))
   );
@@ -59,13 +53,18 @@ export default function WorldCamera() {
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
 
-  // Local "how long have we been holding, awaiting assetsReady" clock — reset
-  // to 0 the instant we're not holding, so the idle drift always eases in
-  // from zero each time rather than resuming mid-wave from a stale value.
   const holdElapsedRef = useRef(0);
+  const debugClock = useRef(0);
 
-  // Debug readout — visible in Leva (temporarily set <Leva /> instead of
-  // <Leva hidden /> in WorldManager.tsx to see it).
+  // Scratch objects — nothing allocated per frame in the hot path.
+  const scratch = useRef({
+    spherical: new THREE.Spherical(),
+    spacePos: new THREE.Vector3(),
+    zoomPos: new THREE.Vector3(),
+    finalPos: new THREE.Vector3(),
+    lookAt: new THREE.Vector3(),
+  }).current;
+
   const [, setDebug] = useControls(
     "World Phase Debug",
     () => ({
@@ -77,20 +76,15 @@ export default function WorldCamera() {
     { collapsed: true }
   );
 
-  // The one sanctioned World<->Journey coupling point: read Journey's `started`
-  // flag only (never chapter data), flip camera ownership accordingly.
   useEffect(() => {
     setCameraOwner(started ? "journey" : "world");
   }, [started, setCameraOwner]);
 
-  // Manual CameraControls only active in ISLAND, and only while World owns the camera.
   useEffect(() => {
     if (!controls) return;
     controls.enabled = roaming || (phase === "ISLAND" && started && !isTransitioning);
   }, [controls, phase, started, isTransitioning, roaming]);
 
-  // One-time hard sync when CameraControls takes over, so it doesn't snap from
-  // wherever World's manual writes last left the camera.
   useEffect(() => {
     if (phase === "ISLAND" && controls && !hasSyncedIslandEntry.current) {
       controls.setLookAt(
@@ -103,8 +97,6 @@ export default function WorldCamera() {
     if (phase !== "ISLAND") hasSyncedIslandEntry.current = false;
   }, [phase, controls]);
 
-  // Manual drag-orbit for SPACE — CameraControls is disabled here so this never
-  // fights it; both simply never run at the same time (see effect above).
   useEffect(() => {
     const el = gl.domElement;
     function onPointerDown(e: PointerEvent) {
@@ -138,11 +130,9 @@ export default function WorldCamera() {
 
   useFrame((state, delta) => {
     if (roaming) return;
-    if (cameraOwner === "journey") return; // JourneyCamera's own useFrame owns the camera entirely.
+    if (cameraOwner === "journey") return;
 
     if (phase === "ISLAND") {
-      // Until "Begin Journey" is selected, Island is a reversible stop on
-      // the world scroll rather than a terminal state.
       if (!started && targetProgressRef.current + ARRIVED_EPSILON < progressRef.current) {
         setPhase("TRANSITION_TO_SPACE");
         return;
@@ -155,70 +145,58 @@ export default function WorldCamera() {
       return;
     }
 
-    // Idle auto-rotate, matching the old OrbitControls autoRotate feel — pauses
-    // the moment the user drags, resumes the moment they release. Only visually
-    // relevant pre-cloud (the corridor branch below ignores rotatedSpacePos).
-    // if (phase === "SPACE" && !isDragging.current) dragTheta.current += AUTO_ROTATE_SPEED * delta;
+    const dt = Math.min(delta, MAX_DT);
 
     const theta = baseSpherical.current.theta + dragTheta.current;
     const phi = baseSpherical.current.phi + dragPhi.current;
-    const rotatedSpacePos = new THREE.Vector3().setFromSpherical(
-      new THREE.Spherical(baseSpherical.current.radius, phi, theta)
-    );
-    const rotatedZoomPos = new THREE.Vector3().setFromSpherical(
-      new THREE.Spherical(zoomRadius.current, phi, theta)
-    );
+    scratch.spherical.set(baseSpherical.current.radius, phi, theta);
+    scratch.spacePos.setFromSpherical(scratch.spherical);
+    scratch.spherical.set(zoomRadius.current, phi, theta);
+    scratch.zoomPos.setFromSpherical(scratch.spherical);
 
-    progressRef.current = smoothProgress(progressRef.current, targetProgressRef.current, delta);
+    progressRef.current = smoothProgress(progressRef.current, targetProgressRef.current, dt, SCROLL_FOLLOW_SPEED);
     const p = progressRef.current;
     const arrivalT = getIslandArrivalT(p, config.islandArrivalSpan);
 
-    if (insideCloudsRef.current) {
-      // Both TRANSITION_TO_ISLAND and TRANSITION_TO_SPACE now share this
-      // single branch — same corridor, same arrivalT-driven sampling, just
-      // traversed in whichever direction progress is currently moving.
-      const { position, lookAt, fov, bank } = corridorRef.current;
+    // The corridor ref starts as [0,0,0]. On the first frame(s) of a transition the
+    // corridor hasn't been sampled yet, so using it would put the camera INSIDE the Sun.
+    const c = corridorRef.current;
+    const corridorReady =
+      c.position[0] * c.position[0] + c.position[1] * c.position[1] + c.position[2] * c.position[2] > 1e-6;
+
+    if (insideCloudsRef.current && corridorReady) {
+      const { position, lookAt, fov, bank } = c;
 
       const holding = !assetsReady;
-      holdElapsedRef.current = holding ? holdElapsedRef.current + delta : 0;
+      holdElapsedRef.current = holding ? holdElapsedRef.current + dt : 0;
       const drift = holding ? getIdleCloudDrift(holdElapsedRef.current) : ([0, 0, 0] as [number, number, number]);
 
-      const finalPos = new THREE.Vector3(position[0] + drift[0], position[1] + drift[1], position[2] + drift[2]);
-      const lookAtVec = new THREE.Vector3(lookAt[0], lookAt[1], lookAt[2]);
+      scratch.finalPos.set(position[0] + drift[0], position[1] + drift[1], position[2] + drift[2]);
+      scratch.lookAt.set(lookAt[0], lookAt[1], lookAt[2]);
 
-      state.camera.position.copy(finalPos);
+      state.camera.position.copy(scratch.finalPos);
       if (Math.abs(bank) > 0.0005) {
-        state.camera.quaternion.copy(computeLookAtQuaternion(finalPos, lookAtVec, bank));
+        state.camera.quaternion.copy(computeLookAtQuaternion(scratch.finalPos, scratch.lookAt, bank));
       } else {
-        state.camera.lookAt(lookAtVec);
+        state.camera.lookAt(scratch.lookAt);
       }
       if ("fov" in state.camera) {
         (state.camera as any).fov = fov;
         (state.camera as any).updateProjectionMatrix();
       }
     } else {
-      // Plain SPACE-phase zoom/rotate.
       const { position, lookAt, fov } = getWorldCameraState(
         p,
-        [rotatedSpacePos.x, rotatedSpacePos.y, rotatedSpacePos.z],
-        [rotatedZoomPos.x, rotatedZoomPos.y, rotatedZoomPos.z]
+        [scratch.spacePos.x, scratch.spacePos.y, scratch.spacePos.z],
+        [scratch.zoomPos.x, scratch.zoomPos.y, scratch.zoomPos.z]
       );
-      state.camera.position.set(...position);
-      state.camera.lookAt(...lookAt);
+      state.camera.position.set(position[0], position[1], position[2]);
+      state.camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
       if ("fov" in state.camera) {
         (state.camera as any).fov = fov;
         (state.camera as any).updateProjectionMatrix();
       }
     }
-
-    // ---------------------------------------------------------------------
-    // Phase transitions — symmetric on arrivalT, both directions:
-    //   SPACE <-> TRANSITION_TO_ISLAND happens at arrivalT crossing 0
-    //   TRANSITION_TO_ISLAND/SPACE <-> ISLAND happens at arrivalT crossing 1
-    // Same arrivalT value drives both transition phases identically, so
-    // reversing mid-flight just walks back along the same corridor sample
-    // instead of swapping to a different camera-position formula.
-    // ---------------------------------------------------------------------
 
     if (phase === "SPACE" && p >= ENTER_ISLAND_THRESHOLD) {
       setPhase("TRANSITION_TO_ISLAND");
@@ -240,12 +218,17 @@ export default function WorldCamera() {
       }
     }
 
-    setDebug({
-      phase,
-      progress: Number(p.toFixed(4)),
-      targetProgress: Number(targetProgressRef.current.toFixed(4)),
-      arrivalT: Number(arrivalT.toFixed(4)),
-    });
+    // Leva store writes trigger React work — was every frame, now 4x/second.
+    debugClock.current += delta;
+    if (debugClock.current >= 0.25) {
+      debugClock.current = 0;
+      setDebug({
+        phase,
+        progress: Number(p.toFixed(4)),
+        targetProgress: Number(targetProgressRef.current.toFixed(4)),
+        arrivalT: Number(arrivalT.toFixed(4)),
+      });
+    }
   });
 
   return null;

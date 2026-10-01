@@ -18,6 +18,8 @@ import ChapterPanel from "@/components/Journey/ChapterPanel";
 import { WindProvider } from "@/components/fire/WindContext";
 import AudioZones from "@/components/Island/AudioZones";
 import ShipwreckHotspot from "@/components/Island/ShipwreckHotspot";
+import BoatRideHUD from "@/components/Island/boat-ride/BoatRideHUD";
+import { useRide } from "@/components/Island/boat-ride/boatRideStore";
 
 const Leva = dynamic(
   () => import("leva").then((m) => m.Leva),
@@ -27,6 +29,8 @@ const Leva = dynamic(
 );
 
 export default function Page() {
+  const ride = useRide();
+  const riding = ride.phase !== "idle";
   return (
     <JourneyProvider>
       <AudioProvider>
@@ -46,7 +50,8 @@ export default function Page() {
             <WindProvider>
               <IslandScene />
               <AudioZones />
-              <JourneyCamera />
+              {/* One camera owner at a time (PLAN §2.1) */}
+              {!riding && <JourneyCamera />}
             </WindProvider>
           </Canvas>
 
@@ -54,6 +59,7 @@ export default function Page() {
           <ChapterPanel />
           {/* Shipwreck hotspot UI — DOM, must be outside the Canvas (PLAN §6.2) */}
           <ShipwreckHotspot />
+          <BoatRideHUD />
           <AudioButton />
           <AudioController />
           {/* <Leva hidden /> */}

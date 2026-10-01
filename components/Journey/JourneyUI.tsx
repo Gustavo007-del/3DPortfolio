@@ -1,6 +1,7 @@
 "use client";
 
 import { useJourney } from "./JourneyProvider";
+import { useRide } from "@/components/Island/boat-ride/boatRideStore";
 
 export default function JourneyUI() {
   const {
@@ -12,6 +13,11 @@ export default function JourneyUI() {
   next,
   previous,
 } = useJourney();
+
+  // Hide/dim journey UI while riding (PLAN §10): overlays must not compete
+  // with the HUD, and its buttons must not be clickable mid-ride.
+  const ride = useRide();
+  if (ride.phase !== "idle") return null;
 
   return (
     <div

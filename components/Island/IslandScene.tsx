@@ -22,6 +22,15 @@ import CloudLayer from "@/components/fire/CloudLayer";
 import MistController from "@/components/fire/MistController";
 import BirdDebug from "@/components/birds/BirdDebug";
 import { ParticleController } from "@/components/Environment/ParticleEngine/ParticleController";
+import BoatRideController from "./boat-ride/BoatRideController";
+import BoatRideCamera from "./boat-ride/BoatRideCamera";
+import { useRide } from "./boat-ride/boatRideStore";
+
+/** Mounts the chase camera only while a ride is active (PLAN §2.1/§9). */
+function BoatRideCameraGate() {
+  const ride = useRide();
+  return ride.phase !== "idle" ? <BoatRideCamera /> : null;
+}
 
 
 function Mountain({
@@ -104,6 +113,11 @@ export default function IslandScene({ active = true }: { active?: boolean }) {
 
       {/* Fort idle motion + cursor magnification lens (single transform writer). */}
       <FortEffectsController active={active} />
+
+      {/* Ride-a-boat: click handling + sim writer, and the chase camera
+          (gated to ride phases — every other camera writer unmounts). */}
+      <BoatRideController />
+      <BoatRideCameraGate />
 
 </>
   );

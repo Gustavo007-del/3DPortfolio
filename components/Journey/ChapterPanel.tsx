@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useJourney } from "./JourneyProvider";
+import { useRide } from "@/components/Island/boat-ride/boatRideStore";
 
 const CHAPTER_CARDS: Record<string, { left: { label: string; text: string }; right: { label: string; text: string } }> = {
   dock: {
@@ -33,6 +34,7 @@ export default function ChapterPanel() {
     currentStop,
     cameraState,
   } = useJourney();
+  const ride = useRide();
   const [cardsVisible, setCardsVisible] = useState(true);
 
   useEffect(() => {
@@ -42,6 +44,8 @@ export default function ChapterPanel() {
   }, [currentStop.id]);
 
   if (!started) return null;
+  // Hide chapter cards while riding (PLAN §10) — the HUD owns the corners.
+  if (ride.phase !== "idle") return null;
 
   const cards = CHAPTER_CARDS[currentStop.id] ?? CHAPTER_CARDS.dock;
 

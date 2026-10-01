@@ -37,6 +37,8 @@ import {
 import { sampleWaterSurface } from "./waterSampler";
 import { useIsActive } from "@/components/each-frame/WorldLOD";
 import { useWorldStateOptional } from "@/components/World/WorldState";
+import { isRideActive } from "./boat-ride/boatRideStore";
+import { scheduleLandMaskBuild } from "./boat-ride/landMask";
 
 export interface WreckPointerPayload {
   /** Raycast hit wreck/plank geometry under the cursor. */
@@ -58,6 +60,10 @@ const registry: {
   scene: THREE.Object3D | null;
   camera: THREE.Camera | null;
   entities: FortEntity[];
+  /** Lens scale slot per entity: [scale, atRest] — mirrored from the comp ref. */
+  motion: Float32Array;
+  /** Parallel to the orbit-bearing slice of `entities`. */
+  orbits: OrbitState[];
   fires: FireMaterialRef[];
   wreckRoot: THREE.Object3D | null;
   wreckAnchor: THREE.Vector3 | null;
@@ -67,6 +73,8 @@ const registry: {
   scene: null,
   camera: null,
   entities: [],
+  motion: new Float32Array(0),
+  orbits: [],
   fires: [],
   wreckRoot: null,
   wreckAnchor: null,
@@ -113,6 +121,84 @@ const lastPointer = { x: 0, y: 0, inside: false };
 /** GPU resources of the hover proxies, freed when the scene is released. */
 let activeProxyDisposables: Array<{ dispose(): void }> = [];
 
+/**
+ * The boat currently owned by the ride controller (PLAN §6.5): the idle
+ * writer skips it entirely — no bob, no orbit advance, no lens scale — until
+ * the ride finishes and the pose is reseeded.
+ */
+let riddenBoat: string | null = null;
+
+export function setRiddenBoat(name: string | null) {
+  if (name && riddenBoat !== name) {
+    // Snap any in-flight lens magnification back to rest so the boat can't
+    // freeze at a scaled size while the ride owns its transform.
+    const ei = registry.entities.findIndex((e) => e.root.obj.name === name);
+    if (ei >= 0 && registry.motion.length === registry.entities.length * 2) {
+      const e = registry.entities[ei];
+      for (const ns of e.nodes) ns.obj.scale.copy(ns.restScale);
+      registry.motion[ei * 2] = 1;
+      registry.motion[ei * 2 + 1] = 1;
+    }
+  }
+  riddenBoat = name;
+}
+
+/**
+ * On ride exit, re-capture the ridden boat's rest transforms (and orbit
+ * state) from its final pose — the boat stays where it was left and the
+ * idle bob + slow orbit resume around the new spot (PLAN §6.5, §15.1).
+ */
+export function reseedBoatPose(name: string) {
+  const ei = registry.entities.findIndex((e) => e.root.obj.name === name);
+  if (ei < 0) return;
+  const e = registry.entities[ei];
+  const obj = e.root.obj;
+  obj.updateMatrixWorld(true);
+
+  for (const ns of e.nodes) {
+    ns.obj.matrixWorld.decompose(ns.restPosition, ns.restQuaternion, ns.restScale);
+    const box = new THREE.Box3().setFromObject(ns.obj);
+    if (Number.isFinite(box.min.y)) {
+      ns.baseOffsetY = Math.max(0, ns.restPosition.y - box.min.y);
+    }
+  }
+
+  // Lens bounds follow the new pose.
+  const box = new THREE.Box3().setFromObject(obj);
+  if (!box.isEmpty() && Number.isFinite(box.min.x)) {
+    box.getCenter(e.center);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    e.boundingRadius = 0.5 * size.length();
+  }
+
+  // Orbit resumes from the left-behind position (clamped so it can't cut
+  // through the island over the following minutes).
+  if (e.orbit) {
+    const dx = obj.position.x;
+    const dz = obj.position.z;
+    const r0 = Math.max(1e-3, Math.hypot(dx, dz));
+    e.orbit.radius0 = r0;
+    e.orbit.radius = THREE.MathUtils.clamp(
+      r0,
+      BOAT_ORBIT.radiusMin,
+      BOAT_ORBIT.radiusMax
+    );
+    e.orbit.angle = Math.atan2(dx, dz);
+    let oi = 0;
+    for (let i = 0; i < ei; i++) if (registry.entities[i].orbit) oi++;
+    const os = registry.orbits[oi];
+    if (os) {
+      os.angle = e.orbit.angle;
+      os.radius = r0;
+    }
+  }
+  if (registry.motion.length === registry.entities.length * 2) {
+    registry.motion[ei * 2] = 1;
+    registry.motion[ei * 2 + 1] = 1;
+  }
+}
+
 /** Called once by the GLB mount (Mountain) after the scene loads. */
 export function registerFortScene(scene: THREE.Object3D) {
   if (registry.scene === scene) return;
@@ -120,6 +206,9 @@ export function registerFortScene(scene: THREE.Object3D) {
   scene.updateMatrixWorld(true);
 
   const entities = buildFortEntities(scene);
+
+  // Collision grid for the boat-ride mode (PLAN §7.1) — chunked build.
+  scheduleLandMaskBuild(scene);
 
   // Backdrop (mountains, ground, water) must never intercept rays (PLAN §6.3).
   scene.traverse((obj) => {
@@ -206,9 +295,12 @@ export function registerFortScene(scene: THREE.Object3D) {
 export function releaseFortScene() {
   for (const r of activeProxyDisposables) r.dispose();
   activeProxyDisposables = [];
+  riddenBoat = null;
   registry.scene = null;
   registry.camera = null;
   registry.entities = [];
+  registry.motion = new Float32Array(0);
+  registry.orbits = [];
   registry.fires = [];
   registry.wreckRoot = null;
   registry.wreckAnchor = null;
@@ -271,6 +363,9 @@ export default function FortEffectsController({
             angle: e.orbit!.angle,
             radius: e.orbit!.radius0,
           }));
+        // Mirror into the registry so reseedBoatPose can reach them.
+        registry.motion = motionRef.current;
+        registry.orbits = orbitsRef.current;
       }
       if (entitiesRef.current.length === 0) raf = requestAnimationFrame(adopt);
     };
@@ -327,8 +422,11 @@ export default function FortEffectsController({
   }, [gl]);
 
   useFrame((state, delta) => {
-    if (!registry.scene || document.hidden) return;
+    if (!registry.scene) return;
+    // Always track the live camera (cheap) — even while hidden, so dev
+    // introspection / ride tooling can project positions.
     registry.camera = state.camera;
+    if (document.hidden) return;
 
     // active prop > LOD/phase gate. No WorldProvider at all (Nwisland page)
     // counts as enabled — that page has a single always-on world.
@@ -342,8 +440,9 @@ export default function FortEffectsController({
     if (entities.length === 0 || motion.length !== entities.length * 2) return;
 
     const pointer = pointerRef.current;
+    const riding = isRideActive();
     const lensOn =
-      pointer.inside && !touchRef.current && !document.pointerLockElement;
+      pointer.inside && !touchRef.current && !document.pointerLockElement && !riding;
     const t = state.clock.elapsedTime;
     const radius = lensRadiusRef.current;
     const rSq = radius * radius;
@@ -357,6 +456,10 @@ export default function FortEffectsController({
       const e = entities[ei];
       const mi = ei * 2;
 
+      // The ridden boat is owned by BoatRideController — advance its orbit
+      // index (to keep arrays aligned) but skip every write.
+      const ridden = riddenBoat !== null && e.root.obj.name === riddenBoat;
+
       // Advance orbit state first so lens projection and water sampling use
       // the boat's live position, not its authored mooring spot.
       let orbiting = false;
@@ -365,15 +468,18 @@ export default function FortEffectsController({
       let orbitYaw = 0;
       if (e.orbit && orbitIdx < orbits.length) {
         const os = orbits[orbitIdx++];
-        os.angle += BOAT_ORBIT.angularSpeed * delta;
-        os.radius +=
-          (e.orbit.radius - os.radius) *
-          (1 - Math.exp(-BOAT_ORBIT.radiusLerpSpeed * delta));
-        orbitX = Math.sin(os.angle) * os.radius;
-        orbitZ = Math.cos(os.angle) * os.radius;
-        orbitYaw = orbitYawAt(os.angle, 1);
-        orbiting = true;
+        if (!ridden) {
+          os.angle += BOAT_ORBIT.angularSpeed * delta;
+          os.radius +=
+            (e.orbit.radius - os.radius) *
+            (1 - Math.exp(-BOAT_ORBIT.radiusLerpSpeed * delta));
+          orbitX = Math.sin(os.angle) * os.radius;
+          orbitZ = Math.cos(os.angle) * os.radius;
+          orbitYaw = orbitYawAt(os.angle, 1);
+          orbiting = true;
+        }
       }
+      if (ridden) continue;
 
       // ---- Lens target from projected center (PLAN §6.3) ----
       let target = 1;
@@ -589,6 +695,7 @@ function emitWreckPointer(
     raycaster &&
     pointer.inside &&
     !document.pointerLockElement &&
+    !isRideActive() &&
     registry.raycastTargets.length > 0
   ) {
     scratchNdc.set(

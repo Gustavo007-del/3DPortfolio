@@ -21,6 +21,7 @@ import {
   raycastWreckAt,
   type WreckPointerPayload,
 } from "./FortEffectsController";
+import { getRidePhase } from "./boat-ride/boatRideStore";
 
 const ROUTE = "/projects";
 const CLOSE_GRACE_MS = 150;
@@ -117,14 +118,18 @@ export default function ShipwreckHotspot() {
   }, [payload.hovered]);
 
   // Click/tap handling directly on the canvas. Drags are ignored (PLAN §6.2).
+  // While a boat ride is active the hotspot is fully disabled (PLAN §2.6):
+  // no navigation from a click on the canvas, no tap arming.
   useEffect(() => {
     const canvas = document.querySelector("canvas");
     if (!canvas) return;
 
     const onDown = (e: PointerEvent) => {
+      if (getRidePhase() !== "idle") return;
       downPosRef.current = { x: e.clientX, y: e.clientY };
     };
     const onUp = (e: PointerEvent) => {
+      if (getRidePhase() !== "idle") return;
       const down = downPosRef.current;
       downPosRef.current = null;
       if (!down) return;
@@ -167,6 +172,7 @@ export default function ShipwreckHotspot() {
     const canvas = document.querySelector("canvas");
     if (!canvas) return;
     const onLeave = () => {
+      if (getRidePhase() !== "idle") return;
       if (!tapArmedRef.current) scheduleClose();
     };
     canvas.addEventListener("pointerleave", onLeave);
