@@ -96,3 +96,12 @@ export function useJourney() {
 
   return ctx;
 }
+
+/**
+ * Like useJourney but returns null when no provider is mounted — for
+ * components that must work on any page (boat-ride controller).
+ * Always a valid hook call.
+ */
+export function useJourneyOptional() {
+  return useContext(JourneyContext);
+}

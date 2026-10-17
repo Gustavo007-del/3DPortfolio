@@ -48,3 +48,12 @@ export function useWorldState() {
   if (!ctx) throw new Error("useWorldState must be inside WorldProvider");
   return ctx;
 }
+
+/**
+ * Like useWorldState but returns null when no provider is mounted
+ * (e.g. app/Nwisland renders IslandScene outside WorldManager).
+ * Always a valid hook call — safe to use unconditionally.
+ */
+export function useWorldStateOptional() {
+  return useContext(WorldStateContext);
+}

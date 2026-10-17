@@ -1,6 +1,7 @@
 "use client";
 
 import { useJourney } from "./JourneyProvider";
+import { useRide } from "@/components/Island/boat-ride/boatRideStore";
 
 export default function JourneyUI() {
   const {
@@ -12,6 +13,11 @@ export default function JourneyUI() {
   next,
   previous,
 } = useJourney();
+
+  // Hide/dim journey UI while riding (PLAN §10): overlays must not compete
+  // with the HUD, and its buttons must not be clickable mid-ride.
+  const ride = useRide();
+  if (ride.phase !== "idle") return null;
 
   return (
     <div
@@ -61,6 +67,18 @@ export default function JourneyUI() {
             island is in some remodelling!!!
           </div>
 
+          <div
+            style={{
+              color: "rgba(255,255,255,0.9)",
+              fontSize: "0.85rem",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              marginTop: 8,
+            }}
+          >
+            Scroll to travel through the world
+          </div>
+
           <button
             onClick={beginJourney}
             style={{
@@ -86,7 +104,24 @@ export default function JourneyUI() {
 
       {started && (
         <>
-              {isTransitioning && (
+          <div
+            style={{
+              position: "absolute",
+              top: 28,
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "rgba(255,255,255,0.78)",
+              fontSize: "0.72rem",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              textAlign: "center",
+              width: "calc(100% - 32px)",
+            }}
+          >
+            Chapter {currentIndex + 1} of {totalStops}
+          </div>
+
+          {isTransitioning && (
             <div
               style={{
                 position: "absolute",
@@ -106,6 +141,27 @@ export default function JourneyUI() {
               }}
             >
               Traveling...
+            </div>
+          )}
+
+          {!isTransitioning && (
+            <div
+              style={{
+                position: "absolute",
+                bottom: 92,
+                left: "50%",
+                transform: "translateX(-50%)",
+                color: "rgba(255,255,255,0.72)",
+                fontSize: "0.72rem",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                textAlign: "center",
+                width: "calc(100% - 32px)",
+              }}
+            >
+              {currentIndex === totalStops - 1
+                ? "You have reached the end"
+                : "Choose Next to continue your journey"}
             </div>
           )}
 

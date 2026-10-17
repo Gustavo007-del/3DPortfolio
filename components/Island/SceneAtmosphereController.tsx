@@ -5,7 +5,7 @@ import { useControls } from "leva";
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 import * as THREE from "three";
-import { useWorldState } from "@/components/World/WorldState";
+import { useWorldStateOptional } from "@/components/World/WorldState";
 
 export default function SceneAtmosphereController({ active = true }: { active?: boolean }) {
   const { gl } = useThree();
@@ -17,8 +17,10 @@ export default function SceneAtmosphereController({ active = true }: { active?: 
   // with a plain linear THREE.Fog, breaking the `instanceof THREE.FogExp2`
   // check CloudTransition relies on — which is exactly why fog looked static
   // and flat instead of animating during the crossing.
-  const { phase } = useWorldState();
-  const fogOn = phase === "ISLAND";
+  // Nwisland renders this component without a WorldProvider — treat a missing
+  // provider as "island", which is that page's whole world.
+  const world = useWorldStateOptional();
+  const fogOn = !world || world.phase === "ISLAND";
 
   const { ambientIntensity, ambientColor } = useControls("Ambient", {
     ambientIntensity: { value: 0.5, min: 0, max: 1, step: 0.01 },

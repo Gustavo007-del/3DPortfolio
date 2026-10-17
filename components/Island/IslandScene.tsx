@@ -5,6 +5,12 @@ import { useEffect, useState } from "react";
 import { useGLTF } from "@react-three/drei";
 import gsap from "gsap";
 import Mist from "@/components/fire/Mist";
+import FortEffectsController, {
+  registerFortScene,
+  releaseFortScene,
+} from "./FortEffectsController";
+// NOTE: ShipwreckHotspot is DOM and must live OUTSIDE the R3F Canvas —
+// it is mounted by WorldManager (journey overlay) and app/Nwisland directly.
 import GradientSkyController from "./GradientSkyController";
 import SceneAtmosphereController from "./SceneAtmosphereController";
 import LightController from "./LightController";
@@ -16,6 +22,15 @@ import CloudLayer from "@/components/fire/CloudLayer";
 import MistController from "@/components/fire/MistController";
 import BirdDebug from "@/components/birds/BirdDebug";
 import { ParticleController } from "@/components/Environment/ParticleEngine/ParticleController";
+import BoatRideController from "./boat-ride/BoatRideController";
+import BoatRideCamera from "./boat-ride/BoatRideCamera";
+import { useRide } from "./boat-ride/boatRideStore";
+
+/** Mounts the chase camera only while a ride is active (PLAN §2.1/§9). */
+function BoatRideCameraGate() {
+  const ride = useRide();
+  return ride.phase !== "idle" ? <BoatRideCamera /> : null;
+}
 
 
 function Mountain({
@@ -63,6 +78,11 @@ function Mountain({
 
     onRocksReady(rocks);
 
+    // Register the scene with the fort interaction system (boat idle motion,
+    // cursor lens, sway, fire flicker, shipwreck hotspot). Cleanup releases it
+    // so a dead scene is never animated.
+    registerFortScene(scene);
+    return () => releaseFortScene();
     }, [scene, onRocksReady]);
  return <primitive object={scene} />;
 }
@@ -90,6 +110,14 @@ export default function IslandScene({ active = true }: { active?: boolean }) {
       {/* <FireflyController />     */}
        <BirdDebug />
       <ParticleController debugEnabled={process.env.NODE_ENV==="development"} />
+
+      {/* Fort idle motion + cursor magnification lens (single transform writer). */}
+      <FortEffectsController active={active} />
+
+      {/* Ride-a-boat: click handling + sim writer, and the chase camera
+          (gated to ride phases — every other camera writer unmounts). */}
+      <BoatRideController />
+      <BoatRideCameraGate />
 
 </>
   );

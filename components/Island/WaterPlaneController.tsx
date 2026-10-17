@@ -5,25 +5,22 @@ import { useControls } from "leva";
 import { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { useIsActive } from "@/components/each-frame/WorldLOD";
 
-const WAVE_LAYERS = [
-  { dirX: 1.0, dirY: 0.25, wavelength: 140, amplitude: 0.55, steepness: 0.55, speed: 0.9 },
-  { dirX: 0.55, dirY: -0.85, wavelength: 65, amplitude: 0.28, steepness: 0.45, speed: 1.35 },
-  { dirX: -0.4, dirY: 0.9, wavelength: 32, amplitude: 0.13, steepness: 0.35, speed: 1.9 },
-  { dirX: 0.15, dirY: -0.55, wavelength: 16, amplitude: 0.06, steepness: 0.25, speed: 2.6 },
-].map((w) => {
-  const len = Math.hypot(w.dirX, w.dirY) || 1;
-  return {
-    ...w,
-    dirX: w.dirX / len,
-    dirY: w.dirY / len,
-    k: (2 * Math.PI) / w.wavelength,
-  };
-});
+// WAVE_LAYERS lives in waterSampler.ts so boat idle motion can sample the
+// same wave field on the CPU (PLAN.md §6.1).
+import { WAVE_LAYERS, setWaterConfig } from "./waterSampler";
+
+void WAVE_LAYERS;
 
 export default function WaterPlaneController() {
   const geoRef = useRef<THREE.PlaneGeometry>(null!);
   const basePositions = useRef<Float32Array | null>(null);
+  const frameCount = useRef(0);
+
+  // A hidden LODGroup still runs useFrame — without this gate the ~16k-vertex wave
+  // displacement + normal recompute ran every frame during the whole Space phase.
+  const active = useIsActive();
 
   const {
     posY,
@@ -129,11 +126,10 @@ export default function WaterPlaneController() {
   } = useControls("Water Waves", {
     waveEnabled: true,
 
-    // NEW
     patternEnabled: true,
 
     waveHeightScale: {
-      value: .20,
+      value: 0.2,
       min: 0,
       max: 3,
       step: 0.05,
@@ -162,26 +158,41 @@ export default function WaterPlaneController() {
   });
 
   useEffect(() => {
+    // Keep the CPU sampler in sync with the leva-driven wave params.
+    setWaterConfig({
+      posY,
+      waveEnabled,
+      waveHeightScale,
+      waveChoppiness,
+      waveSpeedScale,
+    });
+  }, [posY, waveEnabled, waveHeightScale, waveChoppiness, waveSpeedScale]);
+
+  useEffect(() => {
     if (!geoRef.current) return;
 
     basePositions.current =
       geoRef.current.attributes.position.array.slice() as Float32Array;
   }, [waveSegments]);
 
-  useFrame(({ clock }) => {
+  useFrame((state) => {
     if (
+      !active ||
       !waveEnabled ||
       !geoRef.current ||
       !basePositions.current
     )
       return;
 
-    const pos =
-      geoRef.current.attributes.position as THREE.BufferAttribute;
+    const pos = geoRef.current.attributes.position as THREE.BufferAttribute;
 
     const base = basePositions.current;
 
-    const t = clock.getElapsedTime() * waveSpeedScale;
+    // IMPORTANT: use state.clock.elapsedTime, NOT clock.getElapsedTime().
+    // getElapsedTime() internally calls getDelta(), which resets the clock's
+    // oldTime mid-frame — so the NEXT frame's `delta` (given to every useFrame in
+    // the app, including the camera damping) comes out short and jittery.
+    const t = state.clock.elapsedTime * waveSpeedScale;
 
     for (let i = 0; i < pos.count; i++) {
       const x0 = base[i * 3];
@@ -191,7 +202,8 @@ export default function WaterPlaneController() {
       let dy = 0;
       let dz = 0;
 
-      for (const w of WAVE_LAYERS) {
+      for (let k = 0; k < WAVE_LAYERS.length; k++) {
+        const w = WAVE_LAYERS[k];
         const phase =
           w.k * (w.dirX * x0 + w.dirY * y0) +
           w.speed * t;
@@ -217,7 +229,8 @@ export default function WaterPlaneController() {
 
     pos.needsUpdate = true;
 
-    if (recomputeNormals) {
+    // Normals every other frame — waves are slow, nobody can see the difference.
+    if (recomputeNormals && (frameCount.current++ & 1) === 0) {
       geoRef.current.computeVertexNormals();
     }
   });

@@ -5,7 +5,16 @@ import React, { useEffect, useRef } from "react";
 const TAU = Math.PI * 2;
 const MAX_PARTICLES = 24000;
 const MIN_PARTICLES = 2000;
-const DPR_CAP = 2;
+
+// Soft glowing dots don't need native resolution. The loader used to render at up to
+// 2x DPR with MSAA, i.e. ~4x the fill-rate of additive-blended quads — while the main
+// scene was loading and compiling on the same GPU. 1x looks identical for this effect.
+const DPR_CAP = 1;
+
+// Adaptive quality: starts here and only ever steps DOWN if frames stay slow.
+const START_QUALITY = 0.75;
+const MIN_QUALITY = 0.3;
+const MIN_COUNT = 1500;
 
 const R_IN = 0.15;
 const R_OUT = 4.2;
@@ -65,10 +74,7 @@ vec3 surf(float u, float seedV, float spin) {
   float uc = fract(u);
   float r = radiusOf(uc);
 
-  float a =
-    seedV * TAU +
-    spiralOf(uc) +
-    spin;
+  float a = seedV * TAU + spiralOf(uc) + spin;
 
   float well = uFunnel / (r + 0.12);
 
@@ -77,17 +83,12 @@ vec3 surf(float u, float seedV, float spin) {
     (1.0 - exp(-well / float(Z_FLOOR))) -
     0.6;
 
-  return vec3(
-    r * cos(a),
-    r * sin(a),
-    z
-  );
+  return vec3(r * cos(a), r * sin(a), z);
 }
 
 mat3 rotX(float t) {
   float c = cos(t);
   float s = sin(t);
-
   return mat3(
     1.0, 0.0, 0.0,
     0.0, c, s,
@@ -98,7 +99,6 @@ mat3 rotX(float t) {
 mat3 rotY(float t) {
   float c = cos(t);
   float s = sin(t);
-
   return mat3(
     c, 0.0, -s,
     0.0, 1.0, 0.0,
@@ -109,7 +109,6 @@ mat3 rotY(float t) {
 mat3 rotZ(float t) {
   float c = cos(t);
   float s = sin(t);
-
   return mat3(
     c, s, 0.0,
     -s, c, 0.0,
@@ -118,160 +117,68 @@ mat3 rotZ(float t) {
 }
 
 void main() {
-
   vCorner = aCorner;
 
-  vAcc =
-    step(
-      1.0 - uAccentMix,
-      aSeed.z
-    );
+  vAcc = step(1.0 - uAccentMix, aSeed.z);
 
-  float u0 =
-    fract(aSeed.x - uPhase);
+  float u0 = fract(aSeed.x - uPhase);
 
-  vec3 p0 =
-    surf(
-      u0,
-      aSeed.y,
-      uSpin
-    );
-
-  vec3 p1 =
-    surf(
-      u0 + uDu,
-      aSeed.y,
-      uSpin + uDSpin
-    );
+  vec3 p0 = surf(u0, aSeed.y, uSpin);
+  vec3 p1 = surf(u0 + uDu, aSeed.y, uSpin + uDSpin);
 
   mat3 cam =
     rotX(1.5707963 - uTilt) *
     rotY(uOrbit) *
     rotZ(float(ROLL));
 
-  vec3 pivot =
-    vec3(0.0, 0.15, 0.0);
+  vec3 pivot = vec3(0.0, 0.15, 0.0);
 
-  vec3 e0 =
-    cam * (p0 - pivot);
+  vec3 e0 = cam * (p0 - pivot);
+  vec3 e1 = cam * (p1 - pivot);
 
-  vec3 e1 =
-    cam * (p1 - pivot);
+  float zd0 = e0.z + uDist;
+  float zd1 = e1.z + uDist;
 
-  float zd0 =
-    e0.z + uDist;
-
-  float zd1 =
-    e1.z + uDist;
-
-  if (
-    zd0 < float(NEAR_PLANE) ||
-    zd1 < float(NEAR_PLANE)
-  ) {
+  if (zd0 < float(NEAR_PLANE) || zd1 < float(NEAR_PLANE)) {
     vAlpha = 0.0;
-
-    gl_Position =
-      vec4(2.0, 2.0, 0.0, 1.0);
-
+    gl_Position = vec4(2.0, 2.0, 0.0, 1.0);
     return;
   }
 
-  vec2 sp0 =
-    e0.xy *
-    uFocal /
-    zd0;
+  vec2 sp0 = e0.xy * uFocal / zd0;
+  vec2 sp1 = e1.xy * uFocal / zd1;
 
-  vec2 sp1 =
-    e1.xy *
-    uFocal /
-    zd1;
+  vec2 d = sp1 - sp0;
+  float len = length(d);
 
-  vec2 d =
-    sp1 - sp0;
+  vec2 tangent = len > 0.000001 ? d / len : vec2(1.0, 0.0);
+  vec2 normal = vec2(-tangent.y, tangent.x);
 
-  float len =
-    length(d);
-
-  vec2 tangent =
-    len > 0.000001
-      ? d / len
-      : vec2(1.0, 0.0);
-
-  vec2 normal =
-    vec2(
-      -tangent.y,
-      tangent.x
-    );
-
-  float width =
-    uHalfWidth *
-    uFocal /
-    zd0;
-
-  float lengthPx =
-    max(
-      len,
-      2.0 * width
-    );
+  float width = uHalfWidth * uFocal / zd0;
+  float lengthPx = max(len, 2.0 * width);
 
   vec2 screen =
     sp0 +
-    tangent *
-      (aCorner.y * lengthPx) +
-    normal *
-      (aCorner.x * width);
+    tangent * (aCorner.y * lengthPx) +
+    normal * (aCorner.x * width);
 
-  vec2 ndc =
-    vec2(
-      (screen.x - uShift.x) /
-        uAspect,
-      screen.y - uShift.y
-    );
+  vec2 ndc = vec2(
+    (screen.x - uShift.x) / uAspect,
+    screen.y - uShift.y
+  );
 
-  gl_Position =
-    vec4(
-      ndc * zd0,
-      0.0,
-      zd0
-    );
+  gl_Position = vec4(ndc * zd0, 0.0, zd0);
 
   float edge =
-    smoothstep(
-      0.0,
-      0.20,
-      u0
-    ) *
-    (
-      1.0 -
-      smoothstep(
-        0.62,
-        1.0,
-        u0
-      )
-    );
+    smoothstep(0.0, 0.20, u0) *
+    (1.0 - smoothstep(0.62, 1.0, u0));
 
-  float depthAtt =
-    pow(
-      clamp(
-        uDist / zd0,
-        0.0,
-        1.0
-      ),
-      3.0
-    );
+  float depthAtt = pow(clamp(uDist / zd0, 0.0, 1.0), 3.0);
 
   vAlpha =
     edge *
-    mix(
-      0.35,
-      1.0,
-      aSeed.z
-    ) *
-    mix(
-      0.05,
-      1.0,
-      depthAtt
-    );
+    mix(0.35, 1.0, aSeed.z) *
+    mix(0.05, 1.0, depthAtt);
 }
 `;
 
@@ -286,179 +193,81 @@ varying vec2 vCorner;
 varying float vAcc;
 
 void main() {
+  float distanceFromCenter = abs(vCorner.x * 2.0);
 
-  float distanceFromCenter =
-    abs(vCorner.x * 2.0);
+  float glow = exp(-8.0 * distanceFromCenter * distanceFromCenter);
 
-  float glow =
-    exp(
-      -8.0 *
-      distanceFromCenter *
-      distanceFromCenter
-    );
+  float taper = smoothstep(0.0, 0.25, vCorner.y);
 
-  float taper =
-    smoothstep(
-      0.0,
-      0.25,
-      vCorner.y
-    );
-
-  float alpha =
-    vAlpha *
-    glow *
-    taper;
+  float alpha = vAlpha * glow * taper;
 
   if (alpha < 0.004)
     discard;
 
-  vec3 color =
-    mix(
-      uBase,
-      uAccent,
-      vAcc
-    );
+  vec3 color = mix(uBase, uAccent, vAcc);
 
-  gl_FragColor =
-    vec4(
-      color * alpha,
-      alpha
-    );
+  gl_FragColor = vec4(color * alpha, alpha);
 }
 `;
 
-function compileShader(
-  gl: WebGLRenderingContext,
-  type: number,
-  source: string
-) {
-  const shader =
-    gl.createShader(type);
+function compileShader(gl: WebGLRenderingContext, type: number, source: string) {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
 
-  if (!shader)
-    return null;
-
-  gl.shaderSource(
-    shader,
-    source
-  );
-
+  gl.shaderSource(shader, source);
   gl.compileShader(shader);
 
-  if (
-    !gl.getShaderParameter(
-      shader,
-      gl.COMPILE_STATUS
-    )
-  ) {
-    console.error(
-      gl.getShaderInfoLog(shader)
-    );
-
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
     gl.deleteShader(shader);
-
     return null;
   }
 
   return shader;
 }
 
-function createProgram(
-  gl: WebGLRenderingContext
-) {
-  const vertex =
-    compileShader(
-      gl,
-      gl.VERTEX_SHADER,
-      VERTEX_SHADER
-    );
+function createProgram(gl: WebGLRenderingContext) {
+  const vertex = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
+  const fragment = compileShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
 
-  const fragment =
-    compileShader(
-      gl,
-      gl.FRAGMENT_SHADER,
-      FRAGMENT_SHADER
-    );
+  if (!vertex || !fragment) return null;
 
-  if (!vertex || !fragment)
-    return null;
+  const program = gl.createProgram();
+  if (!program) return null;
 
-  const program =
-    gl.createProgram();
-
-  if (!program)
-    return null;
-
-  gl.attachShader(
-    program,
-    vertex
-  );
-
-  gl.attachShader(
-    program,
-    fragment
-  );
-
+  gl.attachShader(program, vertex);
+  gl.attachShader(program, fragment);
   gl.linkProgram(program);
 
   gl.deleteShader(vertex);
   gl.deleteShader(fragment);
 
-  if (
-    !gl.getProgramParameter(
-      program,
-      gl.LINK_STATUS
-    )
-  ) {
-    console.error(
-      gl.getProgramInfoLog(program)
-    );
-
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
-
     return null;
   }
 
   return program;
 }
 
-function parseColor(
-  value: string
-): [number, number, number] {
+function parseColor(value: string): [number, number, number] {
+  if (!value) return [1, 1, 1];
 
-  if (!value)
-    return [1, 1, 1];
-
-  const color =
-    value.trim();
+  const color = value.trim();
 
   if (color.startsWith("#")) {
+    let hex = color.slice(1);
 
-    let hex =
-      color.slice(1);
-
-    if (
-      hex.length === 3 ||
-      hex.length === 4
-    ) {
-      hex =
-        hex
-          .split("")
-          .map(
-            char =>
-              char + char
-          )
-          .join("");
+    if (hex.length === 3 || hex.length === 4) {
+      hex = hex
+        .split("")
+        .map((char) => char + char)
+        .join("");
     }
 
-    const number =
-      parseInt(
-        hex.slice(0, 6),
-        16
-      );
-
-    if (Number.isNaN(number))
-      return [1, 1, 1];
+    const number = parseInt(hex.slice(0, 6), 16);
+    if (Number.isNaN(number)) return [1, 1, 1];
 
     return [
       ((number >> 16) & 255) / 255,
@@ -467,23 +276,11 @@ function parseColor(
     ];
   }
 
-  const match =
-    color.match(
-      /rgba?\\(([^)]+)\\)/i
-    );
+  const match = color.match(/rgba?\(([^)]+)\)/i);
 
   if (match) {
-
-    const parts =
-      match[1]
-        .split(",")
-        .map(Number);
-
-    return [
-      (parts[0] || 0) / 255,
-      (parts[1] || 0) / 255,
-      (parts[2] || 0) / 255,
-    ];
+    const parts = match[1].split(",").map(Number);
+    return [(parts[0] || 0) / 255, (parts[1] || 0) / 255, (parts[2] || 0) / 255];
   }
 
   return [1, 1, 1];
@@ -522,80 +319,35 @@ export default function GravitationalVortex({
   funnel = 55,
   style,
 }: GravitationalVortexProps) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const hostRef =
-    useRef<HTMLDivElement>(null);
-
-  const canvasRef =
-    useRef<HTMLCanvasElement>(null);
-
-  const liveRef =
-    useRef({
-      progress: 0,
-    });
-
-  liveRef.current.progress =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        progress
-      )
-    );
+  const liveRef = useRef({ progress: 0 });
+  liveRef.current.progress = Math.max(0, Math.min(100, progress));
 
   useEffect(() => {
+    const host = hostRef.current;
+    const canvas = canvasRef.current;
+    if (!host || !canvas) return;
 
-    const host =
-      hostRef.current;
+    const gl = canvas.getContext("webgl", {
+      alpha: true,
+      antialias: false, // MSAA on thousands of tiny additive quads is pure cost
+      premultipliedAlpha: true,
+      depth: false,
+      powerPreference: "high-performance",
+    });
+    if (!gl) return;
 
-    const canvas =
-      canvasRef.current;
-
-    if (!host || !canvas)
-      return;
-
-    const gl =
-      canvas.getContext(
-        "webgl",
-        {
-          alpha: true,
-          antialias: true,
-          premultipliedAlpha: true,
-          depth: false,
-          powerPreference:
-            "high-performance",
-        }
-      );
-
-    if (!gl)
-      return;
-
-    const program =
-      createProgram(gl);
-
-    if (!program)
-      return;
+    const program = createProgram(gl);
+    if (!program) return;
 
     gl.useProgram(program);
 
-    const seedLocation =
-      gl.getAttribLocation(
-        program,
-        "aSeed"
-      );
+    const seedLocation = gl.getAttribLocation(program, "aSeed");
+    const cornerLocation = gl.getAttribLocation(program, "aCorner");
 
-    const cornerLocation =
-      gl.getAttribLocation(
-        program,
-        "aCorner"
-      );
-
-    const uniform =
-      (name: string) =>
-        gl.getUniformLocation(
-          program,
-          name
-        );
+    const uniform = (name: string) => gl.getUniformLocation(program, name);
 
     const u = {
       phase: uniform("uPhase"),
@@ -618,31 +370,13 @@ export default function GravitationalVortex({
 
     const VERTS = 6;
 
-    const seeds =
-      new Float32Array(
-        MAX_PARTICLES *
-          VERTS *
-          3
-      );
-
-    const corners =
-      new Float32Array(
-        MAX_PARTICLES *
-          VERTS *
-          2
-      );
+    const seeds = new Float32Array(MAX_PARTICLES * VERTS * 3);
+    const corners = new Float32Array(MAX_PARTICLES * VERTS * 2);
 
     let seed = 1337;
-
     const random = () => {
-      seed =
-        (seed * 16807) %
-        2147483647;
-
-      return (
-        (seed - 1) /
-        2147483646
-      );
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
     };
 
     const quad = [
@@ -654,437 +388,153 @@ export default function GravitationalVortex({
       [-0.5, 1],
     ];
 
-    for (
-      let i = 0;
-      i < MAX_PARTICLES;
-      i++
-    ) {
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      const u0 = random();
+      const arm = (Math.floor(random() * 5) + (random() - 0.5) * 0.85) / 5;
+      const jitter = random();
 
-      const u0 =
-        random();
+      for (let k = 0; k < VERTS; k++) {
+        const seedIndex = (i * VERTS + k) * 3;
+        seeds[seedIndex] = u0;
+        seeds[seedIndex + 1] = arm;
+        seeds[seedIndex + 2] = jitter;
 
-      const arm =
-        (
-          Math.floor(
-            random() * 5
-          ) +
-          (random() - 0.5) *
-            0.85
-        ) / 5;
-
-      const jitter =
-        random();
-
-      for (
-        let k = 0;
-        k < VERTS;
-        k++
-      ) {
-
-        const seedIndex =
-          (i * VERTS + k) * 3;
-
-        seeds[seedIndex] =
-          u0;
-
-        seeds[
-          seedIndex + 1
-        ] = arm;
-
-        seeds[
-          seedIndex + 2
-        ] = jitter;
-
-        const cornerIndex =
-          (i * VERTS + k) * 2;
-
-        corners[cornerIndex] =
-          quad[k][0];
-
-        corners[
-          cornerIndex + 1
-        ] = quad[k][1];
+        const cornerIndex = (i * VERTS + k) * 2;
+        corners[cornerIndex] = quad[k][0];
+        corners[cornerIndex + 1] = quad[k][1];
       }
     }
 
-    const seedBuffer =
-      gl.createBuffer();
+    const seedBuffer = gl.createBuffer();
+    const cornerBuffer = gl.createBuffer();
+    if (!seedBuffer || !cornerBuffer) return;
 
-    const cornerBuffer =
-      gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, seedBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, seeds, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(seedLocation);
+    gl.vertexAttribPointer(seedLocation, 3, gl.FLOAT, false, 0, 0);
 
-    if (
-      !seedBuffer ||
-      !cornerBuffer
-    )
-      return;
+    gl.bindBuffer(gl.ARRAY_BUFFER, cornerBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, corners, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(cornerLocation);
+    gl.vertexAttribPointer(cornerLocation, 2, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      seedBuffer
-    );
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE);
+    gl.clearColor(0, 0, 0, 0);
 
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      seeds,
-      gl.STATIC_DRAW
-    );
+    const focal = 1 / Math.tan(((FOV * Math.PI) / 180) / 2);
 
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      cornerBuffer
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      corners,
-      gl.STATIC_DRAW
-    );
-
-    gl.enable(
-      gl.BLEND
-    );
-
-    gl.blendFunc(
-      gl.ONE,
-      gl.ONE
-    );
-
-    gl.clearColor(
-      0,
-      0,
-      0,
-      0
-    );
-
-    const focal =
-      1 /
-      Math.tan(
-        ((FOV * Math.PI) /
-          180) /
-          2
-      );
+    // Cached size — reading clientWidth/clientHeight every frame can force layout.
+    const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+    let cssW = host.clientWidth;
+    let cssH = host.clientHeight;
+    const ro = new ResizeObserver(() => {
+      cssW = host.clientWidth;
+      cssH = host.clientHeight;
+    });
+    ro.observe(host);
 
     let phase = 0;
     let spin = 0;
     let raf = 0;
     let lastTime = 0;
 
-    const base =
-      parseColor(baseColor);
+    let quality = START_QUALITY;
+    let slowFrames = 0;
 
-    const accent =
-      parseColor(accentColor);
+    const base = parseColor(baseColor);
+    const accent = parseColor(accentColor);
 
-    const render =
-      (time: number) => {
+    const render = (time: number) => {
+      raf = requestAnimationFrame(render);
 
-        raf =
-          requestAnimationFrame(
-            render
-          );
+      if (document.hidden) {
+        lastTime = 0;
+        return;
+      }
 
-        const dt =
-          lastTime
-            ? Math.min(
-                0.05,
-                (time -
-                  lastTime) /
-                  1000
-              )
-            : 1 / 60;
+      const rawDt = lastTime ? (time - lastTime) / 1000 : 1 / 60;
+      const dt = Math.min(0.05, rawDt);
+      lastTime = time;
 
-        lastTime = time;
-
-        const p =
-          liveRef.current
-            .progress / 100;
-
-        const effectiveSpeed =
-          speed *
-          (0.35 + p * 0.65);
-
-        const directionSign =
-          direction ===
-          "outward"
-            ? -1
-            : 1;
-
-        const radialRate =
-          (effectiveSpeed /
-            50) *
-          RADIAL_AT_50 *
-          directionSign;
-
-        const spinRate =
-          (effectiveSpeed /
-            50) *
-          SPIN_AT_50 *
-          directionSign;
-
-        phase +=
-          dt *
-          radialRate;
-
-        phase -=
-          Math.floor(
-            phase
-          );
-
-        spin +=
-          dt *
-          spinRate;
-
-        spin -=
-          Math.floor(
-            spin / TAU
-          ) *
-          TAU;
-
-        const dpr =
-          Math.min(
-            window.devicePixelRatio ||
-              1,
-            DPR_CAP
-          );
-
-        const width =
-          host.clientWidth;
-
-        const height =
-          host.clientHeight;
-
-        const w =
-          Math.max(
-            1,
-            Math.floor(
-              width * dpr
-            )
-          );
-
-        const h =
-          Math.max(
-            1,
-            Math.floor(
-              height * dpr
-            )
-          );
-
-        if (
-          canvas.width !== w ||
-          canvas.height !== h
-        ) {
-          canvas.width = w;
-          canvas.height = h;
+      // Adaptive quality. A single huge frame (shader compile / GLB parse on the main
+      // thread) is a hitch, not sustained load, so it doesn't count. Only a run of
+      // merely-slow frames steps the particle count down. Never steps back up.
+      if (rawDt > 0.1) {
+        slowFrames = 0;
+      } else if (rawDt > 0.024) {
+        if (++slowFrames >= 24) {
+          quality = Math.max(MIN_QUALITY, quality * 0.8);
+          slowFrames = 0;
         }
+      } else {
+        slowFrames = Math.max(0, slowFrames - 1);
+      }
 
-        gl.viewport(
-          0,
-          0,
-          w,
-          h
-        );
+      const p = liveRef.current.progress / 100;
 
-        gl.clear(
-          gl.COLOR_BUFFER_BIT
-        );
+      const effectiveSpeed = speed * (0.35 + p * 0.65);
+      const directionSign = direction === "outward" ? -1 : 1;
 
-        gl.useProgram(
-          program
-        );
+      const radialRate = (effectiveSpeed / 50) * RADIAL_AT_50 * directionSign;
+      const spinRate = (effectiveSpeed / 50) * SPIN_AT_50 * directionSign;
 
-        gl.bindBuffer(
-          gl.ARRAY_BUFFER,
-          seedBuffer
-        );
+      phase += dt * radialRate;
+      phase -= Math.floor(phase);
 
-        gl.enableVertexAttribArray(
-          seedLocation
-        );
+      spin += dt * spinRate;
+      spin -= Math.floor(spin / TAU) * TAU;
 
-        gl.vertexAttribPointer(
-          seedLocation,
-          3,
-          gl.FLOAT,
-          false,
-          0,
-          0
-        );
+      const w = Math.max(1, Math.floor(cssW * dpr));
+      const h = Math.max(1, Math.floor(cssH * dpr));
 
-        gl.bindBuffer(
-          gl.ARRAY_BUFFER,
-          cornerBuffer
-        );
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
 
-        gl.enableVertexAttribArray(
-          cornerLocation
-        );
+      gl.viewport(0, 0, w, h);
+      gl.clear(gl.COLOR_BUFFER_BIT);
 
-        gl.vertexAttribPointer(
-          cornerLocation,
-          2,
-          gl.FLOAT,
-          false,
-          0,
-          0
-        );
+      const funnelValue = (funnel / 100) * 4.5 * (0.5 + p * 0.5);
+      const twistValue = (twist / 100) * 20;
+      const tilt = (tiltX * Math.PI) / 180;
+      const orbit = (tiltY * Math.PI) / 180;
+      const distance = (6.2 * 100) / Math.max(1, scale);
 
-        const funnelValue =
-          (funnel / 100) *
-          4.5 *
-          (0.5 + p * 0.5);
+      gl.uniform1f(u.phase, phase);
+      gl.uniform1f(u.spin, spin);
+      gl.uniform1f(u.du, -radialRate * EXPOSURE);
+      gl.uniform1f(u.dspin, spinRate * EXPOSURE);
+      gl.uniform1f(u.twist, twistValue);
+      gl.uniform1f(u.funnel, funnelValue);
+      gl.uniform1f(u.halfWidth, (dotSize / 100) * 0.0051);
+      gl.uniform1f(u.tilt, tilt);
+      gl.uniform1f(u.orbit, orbit);
+      gl.uniform1f(u.dist, Math.max(NEAR_PLANE + 1, distance));
+      gl.uniform1f(u.focal, focal);
+      gl.uniform1f(u.aspect, w / Math.max(1, h));
+      gl.uniform1f(u.accentMix, 0.5);
+      gl.uniform2f(u.shift, 0, 0);
+      gl.uniform3fv(u.base, base);
+      gl.uniform3fv(u.accent, accent);
 
-        const twistValue =
-          (twist / 100) *
-          20;
+      const full = MIN_PARTICLES + (density / 100) * (MAX_PARTICLES - MIN_PARTICLES);
+      const count = Math.min(MAX_PARTICLES, Math.max(MIN_COUNT, Math.round(full * quality)));
 
-        const tilt =
-          (tiltX *
-            Math.PI) /
-          180;
-
-        const orbit =
-          (tiltY *
-            Math.PI) /
-          180;
-
-        const distance =
-          (6.2 * 100) /
-          Math.max(
-            1,
-            scale
-          );
-
-        gl.uniform1f(
-          u.phase,
-          phase
-        );
-
-        gl.uniform1f(
-          u.spin,
-          spin
-        );
-
-        gl.uniform1f(
-          u.du,
-          -radialRate *
-            EXPOSURE
-        );
-
-        gl.uniform1f(
-          u.dspin,
-          spinRate *
-            EXPOSURE
-        );
-
-        gl.uniform1f(
-          u.twist,
-          twistValue
-        );
-
-        gl.uniform1f(
-          u.funnel,
-          funnelValue
-        );
-
-        gl.uniform1f(
-          u.halfWidth,
-          (dotSize / 100) *
-            0.0051
-        );
-
-        gl.uniform1f(
-          u.tilt,
-          tilt
-        );
-
-        gl.uniform1f(
-          u.orbit,
-          orbit
-        );
-
-        gl.uniform1f(
-          u.dist,
-          Math.max(
-            NEAR_PLANE + 1,
-            distance
-          )
-        );
-
-        gl.uniform1f(
-          u.focal,
-          focal
-        );
-
-        gl.uniform1f(
-          u.aspect,
-          w /
-            Math.max(
-              1,
-              h
-            )
-        );
-
-        gl.uniform1f(
-          u.accentMix,
-          0.5
-        );
-
-        gl.uniform2f(
-          u.shift,
-          0,
-          0
-        );
-
-        gl.uniform3fv(
-          u.base,
-          base
-        );
-
-        gl.uniform3fv(
-          u.accent,
-          accent
-        );
-
-        const count =
-          Math.round(
-            MIN_PARTICLES +
-              (density / 100) *
-                (MAX_PARTICLES -
-                  MIN_PARTICLES)
-          );
-
-        gl.drawArrays(
-          gl.TRIANGLES,
-          0,
-          count * VERTS
-        );
-      };
-
-    raf =
-      requestAnimationFrame(
-        render
-      );
-
-    return () => {
-
-      cancelAnimationFrame(
-        raf
-      );
-
-      gl.deleteBuffer(
-        seedBuffer
-      );
-
-      gl.deleteBuffer(
-        cornerBuffer
-      );
-
-      gl.deleteProgram(
-        program
-      );
+      gl.drawArrays(gl.TRIANGLES, 0, count * VERTS);
     };
 
+    raf = requestAnimationFrame(render);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      gl.deleteBuffer(seedBuffer);
+      gl.deleteBuffer(cornerBuffer);
+      gl.deleteProgram(program);
+    };
   }, [
     baseColor,
     accentColor,

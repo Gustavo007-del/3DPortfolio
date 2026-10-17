@@ -11,6 +11,11 @@ import { useJourney } from "./JourneyProvider";
 export default function JourneyCamera() {
   const controls = useRef<CameraControls>(null);
   const transitionId = useRef(0);
+  /** True while transitionToStop owns the isTransitioning flag. Critical to
+   *  release on unmount: an awaited setLookAt on disposed controls never
+   *  resolves, which left isTransitioning stuck true forever and silently
+   *  blocked every boat-ride click (the §12 guard). */
+  const pendingTrans = useRef(false);
 
   const {
     started,
@@ -90,6 +95,7 @@ export default function JourneyCamera() {
     const id = ++transitionId.current;
 
     beginTransition();
+    pendingTrans.current = true;
     setCameraState("moving");
 
     await preMove();
@@ -114,8 +120,21 @@ export default function JourneyCamera() {
     if (id !== transitionId.current) return;
 
     setCameraState("idle");
+    pendingTrans.current = false;
     finishTransition();
   }
+
+  // Release the flag we started even if this camera unmounts mid-flight
+  // (island phase change / ride hand-over) — otherwise it never clears.
+  useEffect(() => {
+    return () => {
+      if (pendingTrans.current) {
+        pendingTrans.current = false;
+        finishTransition();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!controls.current) return;
@@ -127,6 +146,26 @@ export default function JourneyCamera() {
 
     void transitionToStop();
   }, [started, currentStop]);
+
+  // Runs after the effect above: adopt the CURRENT camera pose as the
+  // controls' target so a remount (e.g. after a boat ride restores the
+  // previous view) never snaps to a stale/default target (PLAN §2.1/§9.1).
+  const syncDir = useRef(new THREE.Vector3());
+  useEffect(() => {
+    const c = controls.current;
+    if (!c) return;
+    const cam = c.camera;
+    cam.getWorldDirection(syncDir.current);
+    void c.setLookAt(
+      cam.position.x,
+      cam.position.y,
+      cam.position.z,
+      cam.position.x + syncDir.current.x,
+      cam.position.y + syncDir.current.y,
+      cam.position.z + syncDir.current.z,
+      false
+    );
+  }, []);
 
   useFrame(({ camera }) => {
     const target = controls.current?.getTarget(new THREE.Vector3());
