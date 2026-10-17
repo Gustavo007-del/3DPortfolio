@@ -53,7 +53,8 @@ const STAGES: { at: number; content: StageContent }[] = [
     },
   },
   {
-    at: 0.39,
+    // The final message finishes at 45% of the trajectory.
+    at: 0.5,
     content: {
       id: "empty",
       eyebrow: "",
@@ -242,6 +243,7 @@ export default function SpaceOverlay() {
 
       {/* Main stage text — position now driven per-stage via getPositionStyle,
           migrating between corners/sides as the user scrolls through STAGES. */}
+      {content.heading && (
       <div
         style={{
           ...positionStyle,
@@ -314,6 +316,7 @@ export default function SpaceOverlay() {
           </p>
         </div>
       </div>
+      )}
 
       <div className="absolute top-1/2 right-8 -translate-y-1/2 hidden lg:flex flex-col items-end gap-4">
         {STAGES.map((s, i) => (
