@@ -165,6 +165,18 @@ export default function SpaceOverlay() {
           from { opacity: 0; letter-spacing: 0.15em; }
           to { opacity: 1; letter-spacing: 0.08em; }
         }
+        @keyframes travel-wheel {
+          0%, 100% { transform: translateY(-5px); opacity: 0.35; }
+          50% { transform: translateY(5px); opacity: 1; }
+        }
+        @keyframes travel-chevron {
+          0%, 100% { transform: translateY(-3px); opacity: 0.2; }
+          50% { transform: translateY(4px); opacity: 1; }
+        }
+        @keyframes travel-sweep {
+          from { transform: translateX(-110%); }
+          to { transform: translateX(220%); }
+        }
         .hud-fade-in { animation: hud-in 400ms ease forwards; }
         
       `}</style>
@@ -230,7 +242,21 @@ export default function SpaceOverlay() {
 
       {/* Main stage text — position now driven per-stage via getPositionStyle,
           migrating between corners/sides as the user scrolls through STAGES. */}
-      <div style={{ ...positionStyle, transition: "top 500ms ease, left 500ms ease, right 500ms ease" }}>
+      <div
+        style={{
+          ...positionStyle,
+          padding: "1.25rem",
+          borderRadius: "1rem",
+          background: content.anchor === "left"
+            ? "linear-gradient(90deg, rgba(3, 13, 30, 0.84), rgba(3, 13, 30, 0.48), transparent)"
+            : "linear-gradient(270deg, rgba(3, 13, 30, 0.84), rgba(3, 13, 30, 0.48), transparent)",
+          backdropFilter: "blur(7px)",
+          boxShadow: content.anchor === "left"
+            ? "-12px 0 30px rgba(3, 13, 30, 0.22)"
+            : "12px 0 30px rgba(3, 13, 30, 0.22)",
+          transition: "top 500ms ease, left 500ms ease, right 500ms ease",
+        }}
+      >
         <div
           key={content.id}
           className={fading ? "" : "hud-fade-in"}
@@ -246,7 +272,10 @@ export default function SpaceOverlay() {
           <h1
             className="mt-4 text-sm md:text-[25px]"
             style={{
-              color: "#f2fbff",
+              color: "transparent",
+              backgroundImage: "linear-gradient(90deg, #67dcff 0%, #d8c4ff 52%, #ffd49b 100%)",
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
               textShadow: "0 0 20px rgba(120,220,255,0.45), 0 0 60px rgba(80,160,255,0.25)",
               letterSpacing: "0.02em",
               minHeight: "1.1em",
@@ -321,10 +350,46 @@ export default function SpaceOverlay() {
         </div>
       </div>
 
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-center">
-        <p className="text-[10px] tracking-[0.4em]" style={{ color: "rgba(200,230,255,0.4)" }}>
+      <div
+        className="absolute bottom-5 left-1/2 -translate-x-1/2 text-center md:bottom-8"
+        style={{
+          color: "#e4f7ff",
+        }}
+      >
+        <p className="sr-only">
           SCROLL // TRAVEL &nbsp;·&nbsp; DRAG // ORBIT
         </p>
+        <div className="flex items-center justify-center gap-3">
+          <div
+            className="relative h-10 w-6 rounded-full border"
+            style={{ borderColor: "rgba(143,224,255,0.82)", boxShadow: "0 0 14px rgba(79,208,255,0.4)" }}
+          >
+            <span
+              className="absolute left-1/2 top-2 h-3 w-[2px] -translate-x-1/2 rounded-full bg-[#b8efff]"
+              style={{ animation: "travel-wheel 1.3s ease-in-out infinite" }}
+            />
+          </div>
+          <div className="text-left">
+            <p
+              className="text-xs font-bold tracking-[0.2em] md:text-sm md:tracking-[0.28em]"
+              style={{
+                color: "transparent",
+                backgroundImage: "linear-gradient(90deg, #69dcff 0%, #d8c4ff 52%, #ffd49b 100%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+              }}
+            >
+              SCROLL TO TRAVEL
+            </p>
+            <p className="mt-1 text-[10px] tracking-[0.14em]" style={{ color: "rgba(200,230,255,0.82)" }}>
+              SECTOR {String(stageIndex + 1).padStart(2, "0")} <span className="mx-1 text-[#8fe0ff]">/</span> {scanPct}% EXPLORED
+            </p>
+          </div>
+          <span className="text-lg text-[#8fe0ff]" style={{ animation: "travel-chevron 1.3s ease-in-out infinite" }}>↓</span>
+        </div>
+        <div className="relative mt-3 h-px w-full overflow-hidden bg-cyan-100/20">
+          <div className="absolute inset-y-0 left-0 w-1/3 bg-[#8fe0ff]" style={{ animation: "travel-sweep 1.8s ease-in-out infinite", boxShadow: "0 0 10px #8fe0ff" }} />
+        </div>
       </div>
     </div>
   );

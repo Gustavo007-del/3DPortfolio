@@ -56,14 +56,22 @@ export default function ChapterPanel() {
             transition={{
               duration: 0.8,
             }}
+            style={{
+              padding: "2rem clamp(1.5rem, 6vw, 5rem)",
+              borderRadius: "1.5rem",
+              background: "radial-gradient(ellipse at center, rgba(3, 14, 30, 0.82) 0%, rgba(3, 14, 30, 0.54) 52%, transparent 75%)",
+              boxShadow: "0 0 50px 28px rgba(3, 14, 30, 0.32)",
+              backdropFilter: "blur(5px)",
+            }}
           >
             <div
               style={{
-                color: "#b08d57",
+                color: "#7ee2ff",
                 textAlign: "center",
                 letterSpacing: "0.5em",
                 fontSize: 14,
                 marginBottom: 16,
+                textShadow: "0 1px 12px rgba(3, 14, 30, 0.85)",
               }}
             >
               JOURNEY
@@ -71,7 +79,10 @@ export default function ChapterPanel() {
 
             <h1
               style={{
-                color: "white",
+                color: "transparent",
+                backgroundImage: "linear-gradient(90deg, #58d7ff 0%, #d6c2ff 52%, #ffd29a 100%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
 
                 fontSize: 72,
 
@@ -80,6 +91,7 @@ export default function ChapterPanel() {
                 margin: 0,
 
                 textAlign: "center",
+                textShadow: "0 2px 20px rgba(3, 14, 30, 0.9)",
               }}
             >
               {currentStop.title}
@@ -87,13 +99,14 @@ export default function ChapterPanel() {
 
             <p
               style={{
-                color: "#cccccc",
+                color: "#e6f7ff",
 
                 fontSize: 20,
 
                 marginTop: 16,
 
                 textAlign: "center",
+                textShadow: "0 2px 14px rgba(3, 14, 30, 0.95)",
               }}
             >
               {currentStop.subtitle}
