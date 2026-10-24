@@ -42,7 +42,7 @@ export default function NavBar() {
             </a>
           ))}
           <Link
-            href="/projects"
+            href="/Cart"
             className="px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white text-xs font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105"
           >
             All Projects →
@@ -76,7 +76,7 @@ export default function NavBar() {
                 {l}
               </a>
             ))}
-            <Link href="/projects" onClick={() => setOpen(false)} className="mt-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white text-sm font-semibold text-center">
+            <Link href="/Cart" onClick={() => setOpen(false)} className="mt-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white text-sm font-semibold text-center">
               All Projects →
             </Link>
           </motion.div>

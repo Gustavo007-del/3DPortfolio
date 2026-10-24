@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import * as THREE from 'three'
+import { applyJourneyPalette } from './castlePalette'
 
 /**
  * ------------------------------------------------------------------
@@ -56,7 +57,7 @@ const HERO_CAMERA_FOV = 58.7 // matches the 32mm lens / 36mm sensor set up in Bl
 // scrolling "stopped" and freeze the cart's animation again
 const SCROLL_STOP_DELAY = 150
 
-export default function CastleScene({ scrollRotations = 1 }) {
+export default function CastleScene({ motion, scrollRotations = 1 }) {
   const { scene, animations, cameras } = useGLTF('/castle.glb') // <- point this at your actual file
   const { camera } = useThree()
 
@@ -143,6 +144,13 @@ export default function CastleScene({ scrollRotations = 1 }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, cameras, actions, camera])
 
+  useEffect(() => {
+    if (!rootRef.current) return
+    // Includes both the rotating world and the separately parented cart.
+    // Restore originals on unmount/refresh so cached GLTF materials stay clean.
+    return applyJourneyPalette(rootRef.current)
+  }, [scene])
+
   // --- scroll -> rotation, and scroll -> "is animating" -------------------
   // Plain window-scroll version. If you're already using drei's
   // <ScrollControls>, see the comment at the bottom of this file for the
@@ -151,6 +159,7 @@ export default function CastleScene({ scrollRotations = 1 }) {
   const scrollCurrent = useRef(0)
 
   useEffect(() => {
+    if (motion) return
     const onScroll = () => {
       const max = document.body.scrollHeight - window.innerHeight
       scrollTarget.current = max > 0 ? window.scrollY / max : 0
@@ -168,11 +177,15 @@ export default function CastleScene({ scrollRotations = 1 }) {
       window.removeEventListener('scroll', onScroll)
       if (scrollStopTimer.current) clearTimeout(scrollStopTimer.current)
     }
-  }, [])
+  }, [motion])
 
   useFrame((_, delta) => {
     // ease toward the real scroll value so the spin doesn't feel jittery
-    scrollCurrent.current += (scrollTarget.current - scrollCurrent.current) * Math.min(1, delta * 4)
+    if (motion) {
+      scrollCurrent.current = motion.current.progress
+    } else {
+      scrollCurrent.current += (scrollTarget.current - scrollCurrent.current) * Math.min(1, delta * 4)
+    }
 
     if (worldGroup.current) {
       worldGroup.current.rotation.y = -scrollCurrent.current * Math.PI * 2 * scrollRotations
@@ -183,7 +196,7 @@ export default function CastleScene({ scrollRotations = 1 }) {
     // but a `paused` action doesn't advance when the mixer updates it -
     // so flipping `paused` here is enough to freeze/resume playback
     // without touching the mixer itself.
-    const shouldAnimate = isScrolling.current
+    const shouldAnimate = motion ? motion.current.moving : isScrolling.current
     Object.values(actions).forEach((action) => {
       if (action && action.paused === shouldAnimate) {
         action.paused = !shouldAnimate

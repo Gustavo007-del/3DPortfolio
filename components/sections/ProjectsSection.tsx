@@ -119,7 +119,7 @@ export default function ProjectsSection() {
         className="flex justify-center mt-12"
       >
         <Link
-          href="/projects"
+          href="/Cart"
           className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 transition-all duration-300"
         >
           View All Projects

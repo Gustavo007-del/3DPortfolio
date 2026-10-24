@@ -5,7 +5,7 @@
 //    150 ms close grace). Cursor off the wreck → card goes away.
 //  - moving onto the card itself keeps it open (standard menu affordance);
 //    leaving the card closes it again.
-//  - click (not drag) → router.push("/projects"); touch: first tap opens,
+//  - click (not drag) → router.push("/Cart"); touch: first tap opens,
 //    second tap navigates, tap elsewhere dismisses.
 //  - keyboard-focusable proxy button performs the same action
 //  - respects prefers-reduced-motion (transition off via motion-reduce)
@@ -23,7 +23,7 @@ import {
 } from "./FortEffectsController";
 import { getRidePhase } from "./boat-ride/boatRideStore";
 
-const ROUTE = "/projects";
+const ROUTE = "/Cart";
 const CLOSE_GRACE_MS = 150;
 const DRAG_SLOP_PX = 5;
 

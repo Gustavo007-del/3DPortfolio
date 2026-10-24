@@ -24,6 +24,7 @@ import { TransitionManagerProvider } from "@/components/World/Transition/Transit
 import CloudTransition from "@/components/World/Transition/CloudTransition";
 import LoadingTracker from "@/components/scene/LoadingTracker";
 import SpaceOverlay from "@/components/scene/SpaceOverlay";
+import FogFlightOverlay from "@/components/scene/FogFlightOverlay";
 import ResumeButton from "@/components/Buttons/ResumeButton";
 import RoamCamera from "@/components/World/RoamCamera";
 import RoamButton from "@/components/Buttons/RoamButton";
@@ -206,6 +207,7 @@ export default function WorldManager({
               <AudioButton />
               <AudioController />
               <SpaceOverlay />
+              <FogFlightOverlay />
               <Leva hidden />
               {/* Polls Leva 10x/sec — dev only */}
               {process.env.NODE_ENV === "development" && <WorldDebug />}

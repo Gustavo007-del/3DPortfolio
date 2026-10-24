@@ -7,6 +7,8 @@ export type Project = {
   tags: string[];
   coordinates: string;
   link?: string;
+  sourceLink?: string;
+  image?: string;
 };
 
 export const profile = {
@@ -54,11 +56,39 @@ export const projects: Project[] = [
     coordinates: "You Are Here",
   },
   {
-    title: "JWT Auth Starter",
+    title: "TexFix Mobile App",
     description:
-      "A Django authentication app with secure JWT flows and a properly implemented, persistent 'Remember Me' experience.",
-    tags: ["Django", "JWT", "Auth"],
-    coordinates: "Uncharted Backend Waters",
+      "A mobile app I built for TexFix, bringing a focused, practical workflow to the palm of the user's hand.",
+    tags: ["Mobile", "React Native", "API"],
+    coordinates: "Mobile Product — TexFix",
+  },
+  {
+    title: "Natuvipani Farmer App",
+    description:
+      "A farmer-focused mobile app designed to make everyday agricultural information and services easier to access.",
+    tags: ["Mobile", "Farmers", "Backend"],
+    coordinates: "Digital Tools — Natuvipani",
+  },
+  {
+    title: "Movie Booking System",
+    description:
+      "A streamlined movie booking experience for browsing shows, choosing seats, and managing reservations.",
+    tags: ["Web App", "Booking", "Payments"],
+    coordinates: "Entertainment Platform",
+  },
+  {
+    title: "EventMaster",
+    description:
+      "An event management platform for organizing event details, registrations, schedules, and attendees in one place.",
+    tags: ["Events", "Dashboard", "Web App"],
+    coordinates: "Event Operations Platform",
+  },
+  {
+    title: "Kandakalankavu",
+    description:
+      "A dedicated digital experience for Kandakalankavu, bringing its identity and information together in a clear, accessible space.",
+    tags: ["Website", "Branding", "Community"],
+    coordinates: "Cultural Digital Experience",
   },
 ];
 

@@ -42,7 +42,7 @@ export default function WaterPlaneController() {
     waterColor,
     opacity,
   } = useControls("Water", {
-    posY: { value: 2.3, min: -10, max: 20, step: 0.1 },
+    posY: { value: 2.1, min: -10, max: 20, step: 0.1 },
 
     mirror: { value: 0.9, min: 0, max: 1, step: 0.01 },
 
