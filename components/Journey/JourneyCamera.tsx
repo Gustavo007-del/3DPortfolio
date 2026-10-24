@@ -7,10 +7,12 @@ import * as THREE from "three";
 import { DEFAULT_CAMERA } from "@/lib/camera";
 import { JourneyStop } from "@/lib/journey";
 import { useJourney } from "./JourneyProvider";
+import { consumeRideExitJourneyTransition } from "@/components/Island/boat-ride/boatRideStore";
 
 export default function JourneyCamera() {
   const controls = useRef<CameraControls>(null);
   const transitionId = useRef(0);
+  const firstJourneyEffect = useRef(true);
   /** True while transitionToStop owns the isTransitioning flag. Critical to
    *  release on unmount: an awaited setLookAt on disposed controls never
    *  resolves, which left isTransitioning stuck true forever and silently
@@ -142,6 +144,18 @@ export default function JourneyCamera() {
     if (!started) {
       resetCamera();
       return;
+    }
+
+    // BoatRideCamera owns the camera during a ride, so this component is
+    // remounted after the exit tween. The island stop is already active then;
+    // restore control without replaying its welcome/arrival overlay.
+    if (firstJourneyEffect.current) {
+      firstJourneyEffect.current = false;
+      if (consumeRideExitJourneyTransition()) {
+        setCameraState("idle");
+        finishTransition();
+        return;
+      }
     }
 
     void transitionToStop();

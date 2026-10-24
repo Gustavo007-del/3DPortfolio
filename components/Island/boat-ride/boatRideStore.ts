@@ -90,6 +90,15 @@ export const ridePose = {
 
 let finishHandler: (() => void) | null = null;
 let rideCamera: THREE.Camera | null = null;
+// JourneyCamera unmounts while the chase camera owns the scene. Remember the
+// hand-off so its remount after an exit does not replay the island arrival UI.
+let skipNextJourneyTransition = false;
+
+export function consumeRideExitJourneyTransition(): boolean {
+  const shouldSkip = skipNextJourneyTransition;
+  skipNextJourneyTransition = false;
+  return shouldSkip;
+}
 
 /** Called by BoatRideController on mount so force-exit can restore pose. */
 export function setRideCamera(cam: THREE.Camera | null) {
@@ -175,6 +184,7 @@ export function finishRide() {
   const h = finishHandler;
   finishHandler = null;
   h?.();
+  skipNextJourneyTransition = true;
   set({ phase: "idle", boatId: null, wasRoaming: false, snapshot: null });
 }
 
