@@ -3,7 +3,31 @@
 import { useEffect, useRef, useState } from "react";
 import { useWorldState } from "@/components/World/WorldState";
 
-const FOG_START = 0.7;
+const FOG_START = 0.58;
+const ROUTE = {
+  start: [10, 68],
+  control1: [34, 71],
+  control2: [61, 26],
+  end: [90, 36],
+} as const;
+
+function routePose(t: number, viewportAspect: number, direction: number) {
+  const u = 1 - t;
+  const point = (axis: 0 | 1) =>
+    u * u * u * ROUTE.start[axis] +
+    3 * u * u * t * ROUTE.control1[axis] +
+    3 * u * t * t * ROUTE.control2[axis] +
+    t * t * t * ROUTE.end[axis];
+  const tangent = (axis: 0 | 1) =>
+    3 * u * u * (ROUTE.control1[axis] - ROUTE.start[axis]) +
+    6 * u * t * (ROUTE.control2[axis] - ROUTE.control1[axis]) +
+    3 * t * t * (ROUTE.end[axis] - ROUTE.control2[axis]);
+
+  // The aircraft artwork points up; +90° aligns its nose with a rightward path.
+  const rotation = Math.atan2(tangent(1) * viewportAspect, tangent(0)) * 180 / Math.PI
+    + 90 + (direction < 0 ? 180 : 0);
+  return { x: point(0), y: point(1), rotation };
+}
 
 /**
  * A separate, DOM-based navigation layer for the bright cloud crossing.
@@ -12,12 +36,36 @@ const FOG_START = 0.7;
  */
 export default function FogFlightOverlay() {
   const { phase, progressRef } = useWorldState();
-  const [progress, setProgress] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const visibleRef = useRef(false);
   const frameRef = useRef<number | null>(null);
+  const aircraftRef = useRef<HTMLDivElement>(null);
+  const meterRef = useRef<HTMLDivElement>(null);
+  const previousProgressRef = useRef(progressRef.current);
+  const directionRef = useRef(1);
 
   useEffect(() => {
     const update = () => {
-      setProgress(progressRef.current);
+      const progress = progressRef.current;
+      if (Math.abs(progress - previousProgressRef.current) > 0.00001) {
+        directionRef.current = progress > previousProgressRef.current ? 1 : -1;
+      }
+      previousProgressRef.current = progress;
+      const shouldShow = progress >= FOG_START && progress < 1 && phase !== "ISLAND";
+      if (shouldShow !== visibleRef.current) {
+        visibleRef.current = shouldShow;
+        setVisible(shouldShow);
+      }
+      if (shouldShow) {
+        const flightProgress = Math.min(1, Math.max(0, (progress - FOG_START) / (1 - FOG_START)));
+        const pose = routePose(flightProgress, window.innerHeight / window.innerWidth, directionRef.current);
+        if (aircraftRef.current) {
+          aircraftRef.current.style.left = `${pose.x}%`;
+          aircraftRef.current.style.top = `${pose.y}%`;
+          aircraftRef.current.style.transform = `translate(-50%, -50%) rotate(${pose.rotation}deg)`;
+        }
+        if (meterRef.current) meterRef.current.style.width = `${Math.round(flightProgress * 100)}%`;
+      }
       frameRef.current = requestAnimationFrame(update);
     };
 
@@ -25,15 +73,17 @@ export default function FogFlightOverlay() {
     return () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     };
-  }, [progressRef]);
+  }, [phase, progressRef]);
 
-  const visible = progress >= FOG_START && progress < 1 && phase !== "ISLAND";
   if (!visible) return null;
 
+  const progress = progressRef.current;
   const flightProgress = Math.min(1, Math.max(0, (progress - FOG_START) / (1 - FOG_START)));
-  const x = 10 + flightProgress * 80;
-  const y = 68 - Math.sin(flightProgress * Math.PI) * 32;
-  const rotation = -17 + Math.cos(flightProgress * Math.PI) * 9;
+  const pose = routePose(
+    flightProgress,
+    typeof window === "undefined" ? 1 : window.innerHeight / window.innerWidth,
+    directionRef.current
+  );
   const distance = Math.round(flightProgress * 100);
 
   return (
@@ -46,10 +96,6 @@ export default function FogFlightOverlay() {
           0%, 100% { transform: scale(0.85); opacity: 0.35; }
           50% { transform: scale(1.25); opacity: 1; }
         }
-        @keyframes fog-aircraft-bob {
-          0%, 100% { margin-top: -3px; }
-          50% { margin-top: 3px; }
-        }
       `}</style>
 
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -61,7 +107,7 @@ export default function FogFlightOverlay() {
           </linearGradient>
         </defs>
         <path
-          d="M 10 68 C 34 71, 61 26, 90 36"
+          d={`M ${ROUTE.start.join(" ")} C ${ROUTE.control1.join(" ")}, ${ROUTE.control2.join(" ")}, ${ROUTE.end.join(" ")}`}
           fill="none"
           stroke="url(#fog-route)"
           strokeWidth="0.36"
@@ -73,13 +119,13 @@ export default function FogFlightOverlay() {
       </svg>
 
       <div
+        ref={aircraftRef}
         className="absolute h-10 w-10"
         style={{
-          left: `${x}%`,
-          top: `${y}%`,
-          transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+          left: `${pose.x}%`,
+          top: `${pose.y}%`,
+          transform: `translate(-50%, -50%) rotate(${pose.rotation}deg)`,
           filter: "drop-shadow(0 5px 6px rgba(7, 18, 33, 0.48))",
-          animation: "fog-aircraft-bob 1.8s ease-in-out infinite",
         }}
       >
         <span
@@ -112,6 +158,7 @@ export default function FogFlightOverlay() {
         </p>
         <div className="mt-2 h-1 w-48 overflow-hidden rounded-full bg-white/15 md:w-60">
           <div
+            ref={meterRef}
             className="h-full rounded-full"
             style={{
               width: `${distance}%`,

@@ -20,7 +20,7 @@ import { JourneyProvider } from "@/components/Journey/JourneyProvider";
 import ChapterPanel from "@/components/Journey/ChapterPanel";
 import { WindProvider } from "@/components/fire/WindContext";
 import SolarSystem from "@/components/scene/SolarSystem";
-import { TransitionManagerProvider } from "@/components/World/Transition/TransitionManager";
+import { TransitionManagerProvider, useTransitionManager } from "@/components/World/Transition/TransitionManager";
 import CloudTransition from "@/components/World/Transition/CloudTransition";
 import LoadingTracker from "@/components/scene/LoadingTracker";
 import SpaceOverlay from "@/components/scene/SpaceOverlay";
@@ -36,9 +36,10 @@ const WorldDebug = dynamic(() => import("@/components/systems/WorldDebug"), { ss
 
 function SpaceLayer() {
   const { phase } = useWorldState();
-  const active = phase === "SPACE" || phase === "TRANSITION_TO_SPACE";
+  const { returnSceneIsIsland } = useTransitionManager();
+  const active = phase === "SPACE" || (phase === "TRANSITION_TO_SPACE" && !returnSceneIsIsland);
   return (
-    <LODGroup group="space">
+    <LODGroup group="space" activeOverride={active}>
       <SolarSystem active={active} />
     </LODGroup>
   );
@@ -60,17 +61,19 @@ function JourneyOverlay() {
 
 function IslandLayer() {
   const { phase } = useWorldState();
+  const { returnSceneIsIsland } = useTransitionManager();
   const ride = useRide();
-  const active = phase === "ISLAND" || phase === "TRANSITION_TO_ISLAND";
+  const active = phase === "ISLAND" || phase === "TRANSITION_TO_ISLAND" ||
+    (phase === "TRANSITION_TO_SPACE" && returnSceneIsIsland);
   return (
-    <LODGroup group="island">
+    <LODGroup group="island" activeOverride={active}>
       <IslandScene active={active} />
       <AudioZones />
       {/* One camera owner at a time (PLAN §2.1): while a ride runs, the
           chase camera owns the camera — drei CameraControls.update() writes
           every frame regardless of `enabled`, so JourneyCamera must fully
           unmount or it snaps the view back to the island. */}
-      {active && ride.phase === "idle" && <JourneyCamera />}
+      {phase === "ISLAND" && ride.phase === "idle" && <JourneyCamera />}
     </LODGroup>
   );
 }

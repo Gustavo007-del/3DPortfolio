@@ -22,6 +22,7 @@ const VERTEX_SHADER = /* glsl */ `
   attribute float aFade;
 
   uniform float uSize;
+  uniform float uTime;
 
   varying vec2 vUv;
   varying float vPhase;
@@ -38,6 +39,8 @@ const VERTEX_SHADER = /* glsl */ `
       vec4 instanceCenter = vec4(0.0, 0.0, 0.0, 1.0);
     #endif
 
+    instanceCenter.x += cos(uTime * 0.3 + aPhase) * 0.8;
+    instanceCenter.y += sin(uTime * 0.4 + aPhase) * 1.2;
     vec4 mvPosition = modelViewMatrix * instanceCenter;
     mvPosition.xy += position.xy * uSize * aScale;
 

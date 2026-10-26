@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import CloudVeil from "@/components/World/Transition/CloudVeil";
@@ -10,6 +10,8 @@ import {
   SPACE_ZOOM_ENDPOINT,
   easeInOutCubic,
   getIslandArrivalT,
+  smoothProgress,
+  SCROLL_FOLLOW_SPEED,
 } from "@/components/World/WorldTimeline";
 import {
   useTransitionManager,
@@ -44,59 +46,53 @@ type CorridorSession = {
 };
 
 export default function CloudTransition() {
-  const { phase, progressRef } = useWorldState();
-  const { config, densityRef, corridorRef, insideCloudsRef, assetsReady, registerLoadTrigger, fireLoadTriggersOnce } =
+  const { phase, cameraOwner, roaming, progressRef, targetProgressRef } = useWorldState();
+  const { config, densityRef, corridorRef, insideCloudsRef, assetsReady, returnSceneIsIsland, setReturnSceneIsIsland, registerLoadTrigger, fireLoadTriggersOnce } =
     useTransitionManager();
   const { camera, scene, gl } = useThree();
-  const prevPhaseRef = useRef(phase);
-  const [session, setSession] = useState<CorridorSession | null>(null);
-  const sessionRef = useRef<CorridorSession | null>(null);
-
-  // The corridor is created once and retained for the whole visit. Progress
-  // samples that exact path in either direction, so arriving at Space never
-  // regenerates the cloud cards or restarts their animation.
-  useEffect(() => {
-    const previousPhase = prevPhaseRef.current;
-    prevPhaseRef.current = phase;
-    const enteringTransition =
-      (phase === "TRANSITION_TO_ISLAND" && previousPhase !== "TRANSITION_TO_ISLAND") ||
-      (phase === "TRANSITION_TO_SPACE" && previousPhase !== "TRANSITION_TO_SPACE");
-    if (!enteringTransition || sessionRef.current) return;
-
-    const nextSession: CorridorSession = {
+  // Build the stable route before either crossing. Creating it in an effect
+  // after the phase flip left one or two frames with no sampled camera path.
+  const session = useMemo<CorridorSession>(() => ({
       start: SPACE_POS.clone(),
       end: ISLAND_POS.clone(),
       startLookAt: ORIGIN.clone(),
       endLookAt: ISLAND_LOOKAT.clone(),
       startFov: SPACE_ENDPOINT.fov,
       endFov: ISLAND_ENDPOINT.fov,
-    };
-    sessionRef.current = nextSession;
-    setSession(nextSession);
-  }, [phase]);
+  }), []);
 
-  const corridor: CloudCorridor | null = useMemo(() => {
-    if (!session) return null;
+  const corridor: CloudCorridor = useMemo(() => {
     return buildCloudCorridor(session.start, session.end, config.cloudLayerHeight);
   }, [session, config.cloudLayerHeight]);
+  const cloudFog = useMemo(() => new THREE.FogExp2(FOG_COLOR.getHex(), 0), []);
 
   useEffect(() => {
-    if (!scene.fog) scene.fog = new THREE.FogExp2(FOG_COLOR.getHex(), 0);
+    if (!scene.fog) scene.fog = cloudFog;
     return () => {
-      if (scene.fog instanceof THREE.FogExp2 && scene.fog.color.getHex() === FOG_COLOR.getHex()) scene.fog = null;
+      if (scene.fog === cloudFog) scene.fog = null;
     };
-  }, [scene]);
+  }, [scene, cloudFog]);
 
   useEffect(() => {
-    return registerLoadTrigger(() => {
-      gl.compile(scene, camera);
+    return registerLoadTrigger(async () => {
+      await gl.compileAsync(scene, camera);
     });
   }, [registerLoadTrigger, gl, scene, camera]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
+    // Island's steady linear fog owns the scene only while settled there.
+    // Reattach this exact FogExp2 after its <fog> unmounts on the return trip.
+    if (phase !== "ISLAND" && scene.fog !== cloudFog) scene.fog = cloudFog;
+    // Sample clouds and camera from the same progress value in the same frame.
+    // A negative priority runs this before WorldCamera without taking over rendering.
+    if (cameraOwner === "world" && !roaming && phase !== "ISLAND") {
+      progressRef.current = smoothProgress(
+        progressRef.current, targetProgressRef.current, Math.min(delta, 0.05), SCROLL_FOLLOW_SPEED
+      );
+    }
     const progress = progressRef.current;
     const enteringIsland = phase === "TRANSITION_TO_ISLAND";
-    const leavingIsland = phase === "TRANSITION_TO_SPACE" && !!session;
+    const leavingIsland = phase === "TRANSITION_TO_SPACE";
     insideCloudsRef.current = enteringIsland || leavingIsland;
 
     // Base "wisps before the flight starts" density, entry side. Kept on its
@@ -105,7 +101,7 @@ export default function CloudTransition() {
     // camera actually starts moving.
     let density = computeCloudDensity(remapCloudProgress(progress, config), assetsReady, config);
 
-    if ((enteringIsland || leavingIsland) && session && corridor) {
+    if (enteringIsland || leavingIsland) {
       // Same function of raw progress drives BOTH directions — this is what
       // makes the corridor flight symmetric. arrivalT is 0 at/below
       // ENTER_ISLAND_THRESHOLD (Space-side) and 1 at full arrival
@@ -114,9 +110,8 @@ export default function CloudTransition() {
       const corridorU = THREE.MathUtils.clamp(arrivalT, 0, 1);
 
       if (leavingIsland) {
-        // Leaving uses the session density curve (max at Island-side,
-        // clearing as corridorU falls back toward 0 near Space).
-        density = computeSessionDensity(1 - corridorU, assetsReady, config);
+        // Build opacity while leaving Island, then swap scene at full cover.
+        density = computeSessionDensity(corridorU, assetsReady, config);
       }
 
       corridorRef.current = sampleCloudCorridor(
@@ -130,15 +125,24 @@ export default function CloudTransition() {
       );
     }
 
-    densityRef.current = density;
-    if (scene.fog instanceof THREE.FogExp2) scene.fog.density = density * MAX_FOG_DENSITY;
-    if (density >= config.loadThreshold) fireLoadTriggersOnce();
-  });
+    // An async compile can finish after the player reaches the far edge. Fade
+    // the mask down over frames instead of exposing the scene in one white flash.
+    const previousDensity = densityRef.current;
+    densityRef.current = density < previousDensity
+      ? Math.max(density, previousDensity - Math.min(delta, 0.05) * 1.8)
+      : density;
+    if (phase === "ISLAND" && !returnSceneIsIsland) setReturnSceneIsIsland(true);
+    if (leavingIsland && returnSceneIsIsland && densityRef.current >= 0.95) {
+      setReturnSceneIsIsland(false);
+    }
+    if (scene.fog === cloudFog) cloudFog.density = densityRef.current * MAX_FOG_DENSITY;
+    if (densityRef.current >= config.loadThreshold) fireLoadTriggersOnce();
+  }, -1);
 
   return (
     <>
       <CloudVeil />
-      {session && corridor ? <CloudField start={session.start} end={session.end} /> : null}
+      <CloudField start={session.start} end={session.end} />
     </>
   );
 }

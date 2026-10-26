@@ -86,6 +86,7 @@ export default function CloudField({ start, end }: CloudFieldProps) {
   const { config, densityRef, insideCloudsRef } = useTransitionManager();
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const clockRef = useRef(0);
+  const matrix = useMemo(() => new THREE.Matrix4(), []);
 
   const geometry = useMemo(() => new THREE.PlaneGeometry(1, 1), []);
   const material = useMemo(() => new CloudMaterial(BASE_CARD_SIZE), []);
@@ -110,13 +111,12 @@ export default function CloudField({ start, end }: CloudFieldProps) {
     geometry.setAttribute("aPhase", new THREE.InstancedBufferAttribute(tube.aPhase, 1));
     geometry.setAttribute("aFade", new THREE.InstancedBufferAttribute(tube.aFade, 1));
 
-    const m = new THREE.Matrix4();
     for (let i = 0; i < config.cloudCardCount; i++) {
-      m.makeTranslation(tube.basePositions[i * 3], tube.basePositions[i * 3 + 1], tube.basePositions[i * 3 + 2]);
-      mesh.setMatrixAt(i, m);
+      matrix.makeTranslation(tube.basePositions[i * 3], tube.basePositions[i * 3 + 1], tube.basePositions[i * 3 + 2]);
+      mesh.setMatrixAt(i, matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
-  }, [tube, geometry, config.cloudCardCount]);
+  }, [tube, geometry, config.cloudCardCount, matrix]);
 
   useFrame((_, delta) => {
     clockRef.current += delta;
@@ -128,25 +128,6 @@ export default function CloudField({ start, end }: CloudFieldProps) {
     material.setDrift(config.cloudDrift);
     material.update(clockRef.current, density);
 
-    // Skip the per-instance bob loop entirely outside the transition window
-    // — this is the "costs nothing during steady-state Space/Island dwell"
-    // half of the LOD strategy (the other half is `visible` above).
-    if (!active || !meshRef.current) return;
-
-    const mesh = meshRef.current;
-    const m = new THREE.Matrix4();
-    for (let i = 0; i < config.cloudCardCount; i++) {
-      const phase = tube.aPhase[i];
-      const bobY = Math.sin(clockRef.current * 0.4 + phase) * 1.2;
-      const bobX = Math.cos(clockRef.current * 0.3 + phase) * 0.8;
-      m.makeTranslation(
-        tube.basePositions[i * 3] + bobX,
-        tube.basePositions[i * 3 + 1] + bobY,
-        tube.basePositions[i * 3 + 2]
-      );
-      mesh.setMatrixAt(i, m);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
   });
 
   return (

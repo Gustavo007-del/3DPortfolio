@@ -144,6 +144,7 @@ export function getIslandArrivalT(progress: number, arrivalSpan: number): number
 }
 
 export const PROGRESS_SMOOTH_SPEED = 3.5;
+export const SCROLL_FOLLOW_SPEED = 18;
 
 export function smoothProgress(current: number, target: number, delta: number, speed = PROGRESS_SMOOTH_SPEED) {
   const t = 1 - Math.exp(-speed * delta);

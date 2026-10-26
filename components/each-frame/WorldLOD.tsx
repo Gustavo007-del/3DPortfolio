@@ -22,9 +22,9 @@ function isGroupActive(group: LODGroupName, phase: ReturnType<typeof useWorldSta
 // Wraps a subtree, toggles `visible` (never destroys/unmounts), and broadcasts
 // activation state down via context for opt-in useFrame short-circuiting.
 // The `name` (lod-space / lod-island) is used by WorldManager's GPU prewarm.
-export default function LODGroup({ group, children }: { group: LODGroupName; children: ReactNode }) {
+export default function LODGroup({ group, children, activeOverride }: { group: LODGroupName; children: ReactNode; activeOverride?: boolean }) {
   const { phase } = useWorldState();
-  const active = isGroupActive(group, phase);
+  const active = activeOverride ?? isGroupActive(group, phase);
 
   return (
     <group name={`lod-${group}`} visible={active}>

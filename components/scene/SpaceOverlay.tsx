@@ -14,7 +14,7 @@ const STAGES: { at: number; content: StageContent }[] = [
       id: "identity",
       eyebrow: "IDENTITY.SYS // 01",
       heading: "ASA SHIJIL",
-      body: "Full Stack Developer crafting scalable web, mobile, and interactive 3D experiences. From backend architecture to immersive interfaces—I build products end to end.",
+      body: "I TURN IDEAS INTO INTERFACES, SYSTEMS, AND WORLDS.",
       anchor: "left",
       vertical: "top",
     },
@@ -25,7 +25,7 @@ const STAGES: { at: number; content: StageContent }[] = [
       id: "build",
       eyebrow: "PAYLOAD.LOG // 02",
       heading: "FULL STACK. MOBILE. 3D.",
-      body: "Building modern SaaS platforms, mobile applications, enterprise dashboards, booking systems, AI-powered tools, and immersive web experiences that perform at scale.",
+      body: "ONE STACK. EVERY SCREEN. NO ORDINARY BUILDS.",
       anchor: "right",
       vertical: "top",
     },
@@ -36,7 +36,7 @@ const STAGES: { at: number; content: StageContent }[] = [
       id: "render",
       eyebrow: "RENDER.PIPE // 03",
       heading: "ENGINEERING THE EXPERIENCE",
-      body: "React • Next.js • Django • Three.js • React Three Fiber • Docker • Kubernetes • Celery • Redis • Websockets",
+      body: "FROM REACT TO REDIS. FROM CODE TO IMMERSION.",
       anchor: "left",
       vertical: "top",
     },
@@ -47,7 +47,7 @@ const STAGES: { at: number; content: StageContent }[] = [
       id: "approach",
       eyebrow: "NAV.APPROACH // 04",
       heading: "BUILD. OPTIMIZE. SHIP.",
-      body: "Clean architecture, scalable systems, responsive interfaces, and maintainable code. Every project is engineered for performance, reliability, and exceptional user experience.",
+      body: "BUILT TO FEEL EFFORTLESS. ENGINEERED TO LAST.",
       anchor: "right",
       vertical: "top",
     },
@@ -68,18 +68,25 @@ const STAGES: { at: number; content: StageContent }[] = [
 
 const SKILLS = ["DJANGO", "R3F","KUBERNETES", "REDIS","WEBSOCKETS"];
 
-function useTypewriter(text: string, speed = 22) {
+function useTypewriter(text: string, speed = 22, delay = 0) {
   const [out, setOut] = useState("");
   useEffect(() => {
     setOut("");
+    if (!text) return;
     let i = 0;
-    const id = setInterval(() => {
-      i++;
-      setOut(text.slice(0, i));
-      if (i >= text.length) clearInterval(id);
-    }, speed);
-    return () => clearInterval(id);
-  }, [text, speed]);
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const timeout = setTimeout(() => {
+      interval = setInterval(() => {
+        i++;
+        setOut(text.slice(0, i));
+        if (i >= text.length) clearInterval(interval);
+      }, speed);
+    }, delay);
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
+  }, [text, speed, delay]);
   return out;
 }
 
@@ -150,6 +157,11 @@ export default function SpaceOverlay() {
 
   const { content } = STAGES[stageIndex];
   const heading = useTypewriter(fading ? "" : content.heading, 28);
+  const body = useTypewriter(
+    fading ? "" : content.body,
+    13,
+    content.heading.length * 28 + 100
+  );
   const scanPct = Math.round(liveProgress * 100);
   const positionStyle = getPositionStyle(content.anchor, content.vertical);
 
@@ -289,6 +301,7 @@ export default function SpaceOverlay() {
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
               textShadow: "0 0 20px rgba(120,220,255,0.45), 0 0 60px rgba(80,160,255,0.25)",
+              fontFamily: "var(--font-mono), monospace",
               letterSpacing: "0.02em",
               minHeight: "1.1em",
             }}
@@ -300,15 +313,20 @@ export default function SpaceOverlay() {
             />
           </h1>
           <p
-  className="mt-4 text-xs md:text-[13px] font-light"
+  className="mt-4"
   style={{
-    color: "rgba(210,235,255,0.72)",
-    lineHeight: 1.9,
-    letterSpacing: "0.03em",
-    textAlign: "justify",
+    fontFamily: "var(--font-mono), monospace",
+    fontSize: "clamp(11px, 1vw, 13px)",
+    fontWeight: 400,
+    color: "#d8edfa",
+    textShadow: "0 0 18px rgba(103, 220, 255, 0.16)",
+    lineHeight: 1.7,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    textAlign: "left",
     maxWidth: "34rem",
-    textWrap: "pretty",
-    hyphens: "auto",
+    minHeight: "3rem",
+    hyphens: "none",
 
     borderLeft: content.anchor === "left"
       ? "1px solid rgba(140,220,255,0.3)"
@@ -322,7 +340,7 @@ export default function SpaceOverlay() {
     paddingRight: content.anchor === "right" ? "1rem" : 0,
   }}
 >
-            {content.body}
+            {body}
           </p>
         </div>
       </div>

@@ -110,10 +110,8 @@ export function computeCloudDensity(localT: number, assetsReady: boolean, config
 
   return raw * config.cloudDensityMax;
 }
-// Density driven by corridorU (0 at swap instant, both directions) instead
-// of raw worldProgress — TRANSITION_TO_SPACE always starts at progress≈1,
-// which the old progress-based curve read as "already clearing," leaving
-// the Space/Island swap completely unmasked on the way out.
+// On the return flight, u=1 is the clear Island endpoint and u=0 is the
+// opaque Space-side handoff. Keep the actual scene swap under dense clouds.
 export function computeSessionDensity(u: number, assetsReady: boolean, config: TransitionConfig): number {
   const FALL_START = 0.55; // fraction of the flight fully immersed before clearing begins
   let raw = u <= FALL_START ? 1 : 1 - smoothstep((u - FALL_START) / (1 - FALL_START));
@@ -181,6 +179,8 @@ type TransitionManagerContextType = {
   corridorRef: MutableRefObject<CorridorState>;
   insideCloudsRef: MutableRefObject<boolean>;
   assetsReady: boolean;
+  returnSceneIsIsland: boolean;
+  setReturnSceneIsIsland: (value: boolean) => void;
   registerLoadTrigger: (fn: () => void | Promise<void>) => () => void;
   fireLoadTriggersOnce: () => void;
 };
@@ -219,6 +219,7 @@ islandArrivalSpan: { value: DEFAULT_TRANSITION_CONFIG.islandArrivalSpan, min: 0.
   const insideCloudsRef = useRef(false);
 
   const [assetsReady, setAssetsReady] = useState(false);
+  const [returnSceneIsIsland, setReturnSceneIsIsland] = useState(true);
   const triggers = useRef<Set<() => void | Promise<void>>>(new Set());
   const hasFired = useRef(false);
 
@@ -263,6 +264,8 @@ islandArrivalSpan: { value: DEFAULT_TRANSITION_CONFIG.islandArrivalSpan, min: 0.
         corridorRef,
         insideCloudsRef,
         assetsReady,
+        returnSceneIsIsland,
+        setReturnSceneIsIsland,
         registerLoadTrigger,
         fireLoadTriggersOnce,
       }}

@@ -7,7 +7,6 @@ import type { CameraControls } from "@react-three/drei";
 import { useWorldState } from "@/components/World/WorldState";
 import {
   getWorldCameraState,
-  smoothProgress,
   getIdleCloudDrift,
   ISLAND_ENDPOINT,
   SPACE_ENDPOINT,
@@ -29,14 +28,11 @@ const POLAR_CLAMP = 0.15;
 // Lenis (WorldInput) already smooths the scroll. This is only a light follow to hide
 // frame quantisation — the old 3.5 stacked a second ~0.3s smoothing layer on top of
 // Lenis, which is what made scrolling feel mushy/laggy and slow to reverse.
-const SCROLL_FOLLOW_SPEED = 18;
-
 // Clamp frame delta so one slow frame (shader compile, GC) can't make the camera jump.
-const MAX_DT = 0.05;
 
 export default function WorldCamera() {
   const { phase, cameraOwner, roaming, setPhase, setCameraOwner, progressRef, targetProgressRef } = useWorldState();
-  const { corridorRef, insideCloudsRef, assetsReady, config } = useTransitionManager();
+  const { corridorRef, insideCloudsRef, densityRef, assetsReady, config } = useTransitionManager();
   const controls = useThree((s) => s.controls) as CameraControls | null;
   const gl = useThree((s) => s.gl);
   const hasSyncedIslandEntry = useRef(false);
@@ -54,6 +50,7 @@ export default function WorldCamera() {
   phaseRef.current = phase;
 
   const holdElapsedRef = useRef(0);
+  const holdDriftWeightRef = useRef(0);
   const debugClock = useRef(0);
 
   // Scratch objects — nothing allocated per frame in the hot path.
@@ -145,8 +142,6 @@ export default function WorldCamera() {
       return;
     }
 
-    const dt = Math.min(delta, MAX_DT);
-
     const theta = baseSpherical.current.theta + dragTheta.current;
     const phi = baseSpherical.current.phi + dragPhi.current;
     scratch.spherical.set(baseSpherical.current.radius, phi, theta);
@@ -154,7 +149,6 @@ export default function WorldCamera() {
     scratch.spherical.set(zoomRadius.current, phi, theta);
     scratch.zoomPos.setFromSpherical(scratch.spherical);
 
-    progressRef.current = smoothProgress(progressRef.current, targetProgressRef.current, dt, SCROLL_FOLLOW_SPEED);
     const p = progressRef.current;
     const arrivalT = getIslandArrivalT(p, config.islandArrivalSpan);
 
@@ -168,10 +162,17 @@ export default function WorldCamera() {
       const { position, lookAt, fov, bank } = c;
 
       const holding = !assetsReady;
-      holdElapsedRef.current = holding ? holdElapsedRef.current + dt : 0;
-      const drift = holding ? getIdleCloudDrift(holdElapsedRef.current) : ([0, 0, 0] as [number, number, number]);
+      holdElapsedRef.current += Math.min(delta, 0.05);
+      holdDriftWeightRef.current = THREE.MathUtils.damp(
+        holdDriftWeightRef.current, holding ? 1 : 0, 4, Math.min(delta, 0.05)
+      );
+      const drift = getIdleCloudDrift(holdElapsedRef.current);
 
-      scratch.finalPos.set(position[0] + drift[0], position[1] + drift[1], position[2] + drift[2]);
+      scratch.finalPos.set(
+        position[0] + drift[0] * holdDriftWeightRef.current,
+        position[1] + drift[1] * holdDriftWeightRef.current,
+        position[2] + drift[2] * holdDriftWeightRef.current
+      );
       scratch.lookAt.set(lookAt[0], lookAt[1], lookAt[2]);
 
       state.camera.position.copy(scratch.finalPos);
@@ -187,6 +188,8 @@ export default function WorldCamera() {
         }
       }
     } else {
+      holdElapsedRef.current = 0;
+      holdDriftWeightRef.current = 0;
       const { position, lookAt, fov } = getWorldCameraState(
         p,
         [scratch.spacePos.x, scratch.spacePos.y, scratch.spacePos.z],
@@ -209,7 +212,7 @@ export default function WorldCamera() {
     if (phase === "TRANSITION_TO_ISLAND") {
       if (p < ENTER_ISLAND_THRESHOLD - PHASE_HYSTERESIS) {
         setPhase("SPACE");
-      } else if (arrivalT >= 1 - ARRIVED_EPSILON && assetsReady) {
+      } else if (arrivalT >= 1 - ARRIVED_EPSILON && assetsReady && densityRef.current < 0.02) {
         setPhase("ISLAND");
       }
     }
@@ -217,7 +220,7 @@ export default function WorldCamera() {
     if (phase === "TRANSITION_TO_SPACE") {
       if (p < ENTER_ISLAND_THRESHOLD - PHASE_HYSTERESIS) {
         setPhase("SPACE");
-      } else if (arrivalT >= 1 - ARRIVED_EPSILON && assetsReady) {
+      } else if (targetProgressRef.current >= p && arrivalT >= 1 - ARRIVED_EPSILON && assetsReady) {
         setPhase("ISLAND");
       }
     }
