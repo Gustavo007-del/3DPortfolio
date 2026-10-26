@@ -181,8 +181,10 @@ export default function WorldCamera() {
         state.camera.lookAt(scratch.lookAt);
       }
       if ("fov" in state.camera) {
-        (state.camera as any).fov = fov;
-        (state.camera as any).updateProjectionMatrix();
+        if (Math.abs((state.camera as THREE.PerspectiveCamera).fov - fov) > 0.0001) {
+          (state.camera as THREE.PerspectiveCamera).fov = fov;
+          (state.camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+        }
       }
     } else {
       const { position, lookAt, fov } = getWorldCameraState(
@@ -193,8 +195,10 @@ export default function WorldCamera() {
       state.camera.position.set(position[0], position[1], position[2]);
       state.camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
       if ("fov" in state.camera) {
-        (state.camera as any).fov = fov;
-        (state.camera as any).updateProjectionMatrix();
+        if (Math.abs((state.camera as THREE.PerspectiveCamera).fov - fov) > 0.0001) {
+          (state.camera as THREE.PerspectiveCamera).fov = fov;
+          (state.camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+        }
       }
     }
 
@@ -220,7 +224,7 @@ export default function WorldCamera() {
 
     // Leva store writes trigger React work — was every frame, now 4x/second.
     debugClock.current += delta;
-    if (debugClock.current >= 0.25) {
+    if (process.env.NODE_ENV === "development" && debugClock.current >= 0.25) {
       debugClock.current = 0;
       setDebug({
         phase,

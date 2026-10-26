@@ -11,11 +11,10 @@ import { useIsActive } from "@/components/each-frame/WorldLOD";
 // same wave field on the CPU (PLAN.md §6.1).
 import { WAVE_LAYERS, setWaterConfig } from "./waterSampler";
 
-void WAVE_LAYERS;
-
 export default function WaterPlaneController() {
   const geoRef = useRef<THREE.PlaneGeometry>(null!);
   const basePositions = useRef<Float32Array | null>(null);
+  const waveBasis = useRef<{ sine: Float32Array[]; cosine: Float32Array[] } | null>(null);
   const frameCount = useRef(0);
 
   // A hidden LODGroup still runs useFrame — without this gate the ~16k-vertex wave
@@ -171,8 +170,22 @@ export default function WaterPlaneController() {
   useEffect(() => {
     if (!geoRef.current) return;
 
-    basePositions.current =
-      geoRef.current.attributes.position.array.slice() as Float32Array;
+    const base = geoRef.current.attributes.position.array.slice() as Float32Array;
+    basePositions.current = base;
+    const count = geoRef.current.attributes.position.count;
+    const sine = WAVE_LAYERS.map(() => new Float32Array(count));
+    const cosine = WAVE_LAYERS.map(() => new Float32Array(count));
+    for (let i = 0; i < count; i++) {
+      const x = base[i * 3];
+      const y = base[i * 3 + 1];
+      for (let k = 0; k < WAVE_LAYERS.length; k++) {
+        const wave = WAVE_LAYERS[k];
+        const phase = wave.k * (wave.dirX * x + wave.dirY * y);
+        sine[k][i] = Math.sin(phase);
+        cosine[k][i] = Math.cos(phase);
+      }
+    }
+    waveBasis.current = { sine, cosine };
   }, [waveSegments]);
 
   useFrame((state) => {
@@ -180,19 +193,26 @@ export default function WaterPlaneController() {
       !active ||
       !waveEnabled ||
       !geoRef.current ||
-      !basePositions.current
+      !basePositions.current ||
+      !waveBasis.current
     )
       return;
 
     const pos = geoRef.current.attributes.position as THREE.BufferAttribute;
 
     const base = basePositions.current;
+    const { sine, cosine } = waveBasis.current;
+    const output = pos.array as Float32Array;
 
     // IMPORTANT: use state.clock.elapsedTime, NOT clock.getElapsedTime().
     // getElapsedTime() internally calls getDelta(), which resets the clock's
     // oldTime mid-frame — so the NEXT frame's `delta` (given to every useFrame in
     // the app, including the camera damping) comes out short and jittery.
     const t = state.clock.elapsedTime * waveSpeedScale;
+    const timeSine = WAVE_LAYERS.map((wave) => Math.sin(wave.speed * t));
+    const timeCosine = WAVE_LAYERS.map((wave) => Math.cos(wave.speed * t));
+    const amplitudes = WAVE_LAYERS.map((wave) => wave.amplitude * waveHeightScale);
+    const choppiness = WAVE_LAYERS.map((wave) => wave.steepness * waveChoppiness);
 
     for (let i = 0; i < pos.count; i++) {
       const x0 = base[i * 3];
@@ -204,27 +224,20 @@ export default function WaterPlaneController() {
 
       for (let k = 0; k < WAVE_LAYERS.length; k++) {
         const w = WAVE_LAYERS[k];
-        const phase =
-          w.k * (w.dirX * x0 + w.dirY * y0) +
-          w.speed * t;
+        const cosP = cosine[k][i] * timeCosine[k] - sine[k][i] * timeSine[k];
+        const sinP = sine[k][i] * timeCosine[k] + cosine[k][i] * timeSine[k];
 
-        const cosP = Math.cos(phase);
-        const sinP = Math.sin(phase);
-
-        const amp = w.amplitude * waveHeightScale;
-        const q = w.steepness * waveChoppiness;
+        const amp = amplitudes[k];
+        const q = choppiness[k];
 
         dx += q * amp * w.dirX * cosP;
         dy += q * amp * w.dirY * cosP;
         dz += amp * sinP;
       }
 
-      pos.setXYZ(
-        i,
-        x0 + dx,
-        y0 + dy,
-        dz
-      );
+      output[i * 3] = x0 + dx;
+      output[i * 3 + 1] = y0 + dy;
+      output[i * 3 + 2] = dz;
     }
 
     pos.needsUpdate = true;

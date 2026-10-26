@@ -110,13 +110,23 @@ export default function SpaceOverlay() {
   const [liveProgress, setLiveProgress] = useState(0);
   const rafRef = useRef<number | undefined>(undefined);
   const stageIndexRef = useRef(0);
+  const publishedProgressRef = useRef(0);
+  const lastPublishRef = useRef(0);
 
   useEffect(() => {
     if (phase !== "SPACE") return;
 
     function tick() {
       const p = progressRef.current;
-      setLiveProgress(p);
+      // The 3D camera consumes the ref every frame. HUD numbers and the small
+      // meter only need a few updates per second; re-rendering the entire
+      // overlay at display refresh competes with the WebGL scene.
+      const now = performance.now();
+      if (Math.abs(p - publishedProgressRef.current) >= 0.001 && now - lastPublishRef.current >= 80) {
+        publishedProgressRef.current = p;
+        lastPublishRef.current = now;
+        setLiveProgress(p);
+      }
 
       let next = 0;
       for (let i = STAGES.length - 1; i >= 0; i--) {
@@ -252,7 +262,7 @@ export default function SpaceOverlay() {
           background: content.anchor === "left"
             ? "linear-gradient(90deg, rgba(3, 13, 30, 0.84), rgba(3, 13, 30, 0.48), transparent)"
             : "linear-gradient(270deg, rgba(3, 13, 30, 0.84), rgba(3, 13, 30, 0.48), transparent)",
-          backdropFilter: "blur(7px)",
+          // backdropFilter: "blur(1px)",
           boxShadow: content.anchor === "left"
             ? "-12px 0 30px rgba(3, 13, 30, 0.22)"
             : "12px 0 30px rgba(3, 13, 30, 0.22)",
