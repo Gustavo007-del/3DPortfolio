@@ -13,9 +13,9 @@ const STAGES: { at: number; content: StageContent }[] = [
     at: 0,
     content: {
       id: "identity",
-      eyebrow: "IDENTITY.SYS // 01",
+      eyebrow: "01 / THE DEVELOPER",
       heading: "ASA SHIJIL",
-      body: "I TURN IDEAS INTO INTERFACES, SYSTEMS, AND WORLDS.",
+      body: "I build interfaces, systems, and worlds.",
       anchor: "left",
       vertical: "top",
     },
@@ -24,9 +24,9 @@ const STAGES: { at: number; content: StageContent }[] = [
     at: 0.12,
     content: {
       id: "build",
-      eyebrow: "PAYLOAD.LOG // 02",
+      eyebrow: "02 / THE TOOLKIT",
       heading: "FULL STACK. MOBILE. 3D.",
-      body: "ONE STACK. EVERY SCREEN. NO ORDINARY BUILDS.",
+      body: "Full-stack development, mobile products, and immersive 3D.",
       anchor: "right",
       vertical: "top",
     },
@@ -35,9 +35,9 @@ const STAGES: { at: number; content: StageContent }[] = [
     at: 0.24,
     content: {
       id: "render",
-      eyebrow: "RENDER.PIPE // 03",
+      eyebrow: "03 / THE EXPERIENCE",
       heading: "ENGINEERING THE EXPERIENCE",
-      body: "FROM REACT TO REDIS. FROM CODE TO IMMERSION.",
+      body: "From React to Redis. From backend systems to visual experiences.",
       anchor: "left",
       vertical: "top",
     },
@@ -46,9 +46,9 @@ const STAGES: { at: number; content: StageContent }[] = [
     at: 0.36,
     content: {
       id: "approach",
-      eyebrow: "NAV.APPROACH // 04",
+      eyebrow: "04 / THE APPROACH",
       heading: "BUILD. OPTIMIZE. SHIP.",
-      body: "BUILT TO FEEL EFFORTLESS. ENGINEERED TO LAST.",
+      body: "Thoughtful experiences, reliable engineering, and work that ships.",
       anchor: "right",
       vertical: "top",
     },
@@ -95,18 +95,22 @@ function useTypewriter(text: string, speed = 22, delay = 0) {
 // Kept as a lookup rather than inline ternaries so adding a 5th/6th stage
 // position later is a one-line addition here, not a scattered edit.
 function getPositionStyle(anchor: Anchor, vertical: "top" | "mid"): React.CSSProperties {
-  const base: React.CSSProperties = { position: "absolute", maxWidth: "28rem" };
+  const base: React.CSSProperties = {
+    position: "absolute",
+    width: "min(54vw, 42rem)",
+    maxWidth: "42rem",
+    textAlign: anchor === "right" ? "right" : "left",
+  };
   if (vertical === "top") {
-    base.top = "6rem"; // raised from the old ~38% center — sits higher, under the HUD readouts
+    base.top = "clamp(9rem, 24vh, 15rem)";
   } else {
     base.top = "50%";
     base.transform = "translateY(-50%)";
   }
   if (anchor === "left") {
-    base.left = "2rem";
+    base.left = "clamp(24px, 6vw, 88px)";
   } else {
-    base.right = "2rem";
-    base.textAlign = "right";
+    base.right = "clamp(24px, 6vw, 88px)";
   }
   return base;
 }
@@ -169,14 +173,8 @@ export default function SpaceOverlay() {
   if (phase !== "SPACE") return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden font-mono">
+    <div className="space-overlay fixed inset-0 pointer-events-none z-10 overflow-hidden">
       <style>{`
-        @keyframes hud-flicker {
-          0%, 100% { opacity: 1; }
-          92% { opacity: 1; }
-          93% { opacity: 0.4; }
-          94% { opacity: 1; }
-        }
         @keyframes hud-scan {
           0% { transform: translateY(-100%); }
           100% { transform: translateY(100vh); }
@@ -186,8 +184,8 @@ export default function SpaceOverlay() {
           50% { opacity: 1; }
         }
         @keyframes hud-in {
-          from { opacity: 0; letter-spacing: 0.15em; }
-          to { opacity: 1; letter-spacing: 0.08em; }
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         @keyframes travel-wheel {
           0%, 100% { transform: translateY(-5px); opacity: 0.35; }
@@ -202,7 +200,54 @@ export default function SpaceOverlay() {
           to { transform: translateX(220%); }
         }
         .hud-fade-in { animation: hud-in 400ms ease forwards; }
-        
+        .space-hud-label { font-family: var(--font-mono), monospace; letter-spacing: .16em; }
+        .space-display-heading {
+          color: #f3ead8;
+          font-family: var(--font-display), Georgia, serif;
+          font-size: clamp(2.5rem, 5vw, 4.5rem);
+          font-weight: 400;
+          letter-spacing: -.045em;
+          line-height: .98;
+          text-wrap: balance;
+          text-shadow: 0 4px 32px rgba(0, 0, 0, .48);
+        }
+        .space-body-copy {
+          color: rgba(239, 237, 225, .88);
+          font-family: var(--font-body), Georgia, serif;
+          font-size: clamp(15px, 1.25vw, 19px);
+          font-weight: 400;
+          letter-spacing: .005em;
+          line-height: 1.8;
+          text-transform: none;
+          text-shadow: 0 2px 18px rgba(0, 0, 0, .65);
+        }
+        .space-project-link {
+          border-color: rgba(212, 193, 151, .45) !important;
+          border-radius: 999px;
+          background: rgba(10, 18, 20, .56) !important;
+          color: #f3ead8 !important;
+          font-family: var(--font-mono), monospace;
+          letter-spacing: .11em;
+          backdrop-filter: blur(12px);
+          box-shadow: 0 8px 35px rgba(0,0,0,.18);
+        }
+        .space-project-link:hover { border-color: rgba(219, 190, 130, .85) !important; background: rgba(25, 39, 38, .8) !important; }
+        .space-scroll-prompt { font-family: var(--font-display), Georgia, serif; letter-spacing: .08em; }
+        .space-scroll-meta { font-family: var(--font-mono), monospace; letter-spacing: .12em; }
+        .space-copy-panel { padding: 0; background: transparent; box-shadow: none; }
+        .space-eyebrow { color: rgba(219, 205, 169, .76); }
+        .space-accent-line { background: rgba(219, 205, 169, .62); }
+        .space-stage-index { font-family: var(--font-mono), monospace; }
+        @media (max-width: 640px) {
+          .space-display-heading { font-size: clamp(2.25rem, 9vw, 3.25rem); }
+          .space-copy-panel { top: 27% !important; left: 24px !important; right: 24px !important; width: auto !important; max-width: none !important; }
+          .space-copy-panel[data-anchor="right"] { text-align: right !important; }
+          .space-project-link { top: auto !important; bottom: 9.5rem; right: 18px !important; padding: 10px 13px !important; font-size: 9px !important; }
+          .space-corner { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .space-overlay *, .space-overlay *::before, .space-overlay *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+        }
       `}</style>
 
       <div
@@ -211,28 +256,28 @@ export default function SpaceOverlay() {
       />
 
       <div
-        className="absolute left-0 right-0 h-24"
+        className="space-scan absolute left-0 right-0 h-24"
         style={{
-          background: "linear-gradient(to bottom, transparent, rgba(120,220,255,0.06), transparent)",
+          background: "linear-gradient(to bottom, transparent, rgba(214,198,158,0.035), transparent)",
           animation: "hud-scan 6s linear infinite",
         }}
       />
 
       <div
-        className="absolute inset-0 opacity-[0.08]"
+        className="absolute inset-0 opacity-[0.035]"
         style={{
-          backgroundImage: "repeating-linear-gradient(to bottom, rgba(150,220,255,0.6) 0px, transparent 1px, transparent 3px)",
+          backgroundImage: "repeating-linear-gradient(to bottom, rgba(218,205,171,0.24) 0px, transparent 1px, transparent 4px)",
         }}
       />
 
       {liveProgress < 0.12 && (
         <Link
           href="/projects"
-          className="absolute top-20 right-8 md:right-14 pointer-events-auto inline-flex items-center gap-3 border px-4 py-3 font-mono text-[10px] tracking-[0.18em] text-cyan-50 transition-colors hover:bg-cyan-100/10"
-          style={{ borderColor: "rgba(143,224,255,0.38)", background: "rgba(3,13,30,0.45)", textDecoration: "none" }}
+          className="space-project-link absolute top-20 right-8 md:right-14 pointer-events-auto inline-flex items-center gap-3 border px-4 py-3 text-[10px] transition-colors"
+          style={{ textDecoration: "none" }}
         >
-          <span style={{ color: "rgba(143,224,255,0.66)" }}>01—03</span>
-          <span>VIEW SELECTED PROJECTS</span>
+          <span style={{ color: "rgba(219,205,169,0.75)" }}>01—03</span>
+          <span>View selected projects</span>
           <span aria-hidden="true">↗</span>
         </Link>
       )}
@@ -245,32 +290,32 @@ export default function SpaceOverlay() {
       ].map((pos, i) => (
         <div
           key={i}
-          className="absolute w-8 h-8"
-          style={{ ...pos, borderColor: "rgba(140,220,255,0.5)", animation: "hud-flicker 5s ease-in-out infinite" }}
+          className="space-corner absolute w-8 h-8"
+          style={{ ...pos, borderColor: "rgba(212,193,151,0.4)" }}
         />
       ))}
     
-      <div className="absolute top-8 left-14 hidden md:block" style={{ animation: "hud-flicker 7s ease-in-out infinite" }}>
-        <p className="text-[10px] tracking-[0.3em]" style={{ color: "rgba(140,220,255,0.6)" }}>
-          SOL.NAV — LIVE
+      <div className="absolute top-8 left-14 hidden md:block">
+        <p className="space-hud-label text-[10px]" style={{ color: "rgba(223,212,183,0.74)" }}>
+          SOL.NAV / LIVE
         </p>
-        <p className="text-[10px] mt-1" style={{ color: "rgba(140,220,255,0.35)" }}>
+        <p className="space-hud-label text-[9px] mt-2" style={{ color: "rgba(223,212,183,0.42)" }}>
           CAM_θ {(liveProgress * 137).toFixed(2).padStart(6, "0")}° / CAM_φ {(liveProgress * 53).toFixed(2).padStart(6, "0")}°
         </p>
       </div>
 
       <div className="absolute top-8 right-14 text-right hidden md:block">
-        <p className="text-[10px] tracking-[0.3em]" style={{ color: "rgba(140,220,255,0.6)" }}>
+        <p className="space-hud-label text-[10px]" style={{ color: "rgba(223,212,183,0.74)" }}>
           TRAJECTORY
         </p>
         <div className="flex items-center gap-2 mt-1 justify-end">
-          <div className="w-24 h-[3px] bg-white/10 relative overflow-hidden">
+          <div className="w-24 h-[2px] bg-white/15 relative overflow-hidden">
             <div
               className="absolute inset-y-0 left-0"
-              style={{ width: `${scanPct}%`, background: "linear-gradient(to right, #4fd0ff, #a6e8ff)", boxShadow: "0 0 8px #4fd0ff" }}
+              style={{ width: `${scanPct}%`, background: "linear-gradient(to right, #b8cbb1, #e3d2ac)", boxShadow: "0 0 8px rgba(227,210,172,.45)" }}
             />
           </div>
-          <span className="text-[10px] font-mono" style={{ color: "rgba(166,232,255,0.85)" }}>
+          <span className="space-hud-label text-[9px]" style={{ color: "rgba(238,229,205,0.85)" }}>
             {scanPct}%
           </span>
         </div>
@@ -282,75 +327,45 @@ export default function SpaceOverlay() {
       <div
         style={{
           ...positionStyle,
-          padding: "1.25rem",
-          borderRadius: "1rem",
-          background: content.anchor === "left"
-            ? "linear-gradient(90deg, rgba(3, 13, 30, 0.84), rgba(3, 13, 30, 0.48), transparent)"
-            : "linear-gradient(270deg, rgba(3, 13, 30, 0.84), rgba(3, 13, 30, 0.48), transparent)",
-          // backdropFilter: "blur(1px)",
-          boxShadow: content.anchor === "left"
-            ? "-12px 0 30px rgba(3, 13, 30, 0.22)"
-            : "12px 0 30px rgba(3, 13, 30, 0.22)",
+          padding: 0,
+          background: "transparent",
+          boxShadow: "none",
           transition: "top 500ms ease, left 500ms ease, right 500ms ease",
         }}
+        className="space-copy-panel"
+        data-anchor={content.anchor}
       >
         <div
           key={content.id}
           className={fading ? "" : "hud-fade-in"}
           style={{ opacity: fading ? 0 : 1, transition: "opacity 180ms ease" }}
         >
-          <div className={`flex items-center gap-2 mb-3 ${content.anchor === "right" ? "justify-end" : ""}`}>
-            {content.anchor === "left" && <div className="w-6 h-[1px]" style={{ background: "rgba(140,220,255,0.6)" }} />}
-            <p className="text-[10px] tracking-[0.35em]" style={{ color: "rgba(140,220,255,0.75)" }}>
+          <div className={`flex items-center gap-3 mb-5 ${content.anchor === "right" ? "justify-end" : ""}`}>
+            {content.anchor === "left" && <div className="w-8 h-px space-accent-line" />}
+            <p className="space-hud-label space-eyebrow text-[10px]">
               {content.eyebrow}
             </p>
-            {content.anchor === "right" && <div className="w-6 h-[1px]" style={{ background: "rgba(140,220,255,0.6)" }} />}
+            {content.anchor === "right" && <div className="w-8 h-px space-accent-line" />}
           </div>
           <h1
-            className="mt-4 text-sm md:text-[25px]"
+            className="space-display-heading"
             style={{
-              color: "transparent",
-              backgroundImage: "linear-gradient(90deg, #67dcff 0%, #d8c4ff 52%, #ffd49b 100%)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              textShadow: "0 0 20px rgba(120,220,255,0.45), 0 0 60px rgba(80,160,255,0.25)",
-              fontFamily: "var(--font-mono), monospace",
-              letterSpacing: "0.02em",
               minHeight: "1.1em",
             }}
           >
             {heading}
             <span
               className="inline-block w-[3px] h-[0.85em] ml-1 align-middle"
-              style={{ background: "#8fe0ff", animation: "hud-pulse 1s steps(2) infinite" }}
+              style={{ background: "#d8c59b", animation: "hud-pulse 1.4s ease-in-out infinite" }}
             />
           </h1>
           <p
-  className="mt-4"
+  className="space-body-copy mt-5"
   style={{
-    fontFamily: "var(--font-mono), monospace",
-    fontSize: "clamp(11px, 1vw, 13px)",
-    fontWeight: 400,
-    color: "#d8edfa",
-    textShadow: "0 0 18px rgba(103, 220, 255, 0.16)",
-    lineHeight: 1.7,
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    textAlign: "left",
+    textAlign: content.anchor,
     maxWidth: "34rem",
-    minHeight: "3rem",
+    minHeight: "3.5rem",
     hyphens: "none",
-
-    borderLeft: content.anchor === "left"
-      ? "1px solid rgba(140,220,255,0.3)"
-      : "none",
-
-    borderRight: content.anchor === "right"
-      ? "1px solid rgba(140,220,255,0.3)"
-      : "none",
-
-    paddingLeft: content.anchor === "left" ? "1rem" : 0,
-    paddingRight: content.anchor === "right" ? "1rem" : 0,
   }}
 >
             {body}
@@ -363,8 +378,8 @@ export default function SpaceOverlay() {
         {STAGES.map((s, i) => (
           <div key={s.content.id} className="flex items-center gap-2">
             <span
-              className="text-[9px] tracking-widest transition-all duration-300"
-              style={{ color: i === stageIndex ? "rgba(166,232,255,0.9)" : "rgba(166,232,255,0.25)" }}
+              className="space-stage-index text-[9px] tracking-widest transition-all duration-300"
+              style={{ color: i === stageIndex ? "rgba(219,205,169,0.92)" : "rgba(219,205,169,0.32)" }}
             >
               0{i + 1}
             </span>
@@ -373,8 +388,8 @@ export default function SpaceOverlay() {
               style={{
                 width: i === stageIndex ? "28px" : "10px",
                 height: "1px",
-                background: i === stageIndex ? "#8fe0ff" : "rgba(140,220,255,0.3)",
-                boxShadow: i === stageIndex ? "0 0 6px #8fe0ff" : "none",
+                background: i === stageIndex ? "#d8c59b" : "rgba(219,205,169,0.28)",
+                boxShadow: i === stageIndex ? "0 0 8px rgba(216,197,155,.5)" : "none",
               }}
             />
           </div>
@@ -382,12 +397,12 @@ export default function SpaceOverlay() {
       </div>
 
       <div className="absolute bottom-10 left-14 hidden lg:block">
-        <p className="text-[9px] tracking-[0.3em] mb-2" style={{ color: "rgba(140,220,255,0.5)" }}>
-          STACK.MANIFEST
+        <p className="space-hud-label text-[9px] mb-2" style={{ color: "rgba(219,205,169,0.58)" }}>
+          Stack / manifest
         </p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 max-w-[220px]">
           {SKILLS.map((s) => (
-            <span key={s} className="text-[10px] tracking-wider" style={{ color: "rgba(200,230,255,0.55)" }}>
+            <span key={s} className="space-hud-label text-[9px] tracking-wider" style={{ color: "rgba(225,222,207,0.62)" }}>
               {s}
             </span>
           ))}
@@ -397,7 +412,7 @@ export default function SpaceOverlay() {
       <div
         className="absolute bottom-5 left-1/2 -translate-x-1/2 text-center md:bottom-8"
         style={{
-          color: "#e4f7ff",
+          color: "#f3ead8",
         }}
       >
         <p className="sr-only">
@@ -406,33 +421,30 @@ export default function SpaceOverlay() {
         <div className="flex items-center justify-center gap-3">
           <div
             className="relative h-10 w-6 rounded-full border"
-            style={{ borderColor: "rgba(143,224,255,0.82)", boxShadow: "0 0 14px rgba(79,208,255,0.4)" }}
+            style={{ borderColor: "rgba(219,205,169,0.72)", boxShadow: "0 0 18px rgba(219,205,169,0.14)" }}
           >
             <span
-              className="absolute left-1/2 top-2 h-3 w-[2px] -translate-x-1/2 rounded-full bg-[#b8efff]"
+              className="absolute left-1/2 top-2 h-3 w-[2px] -translate-x-1/2 rounded-full bg-[#e4d4ae]"
               style={{ animation: "travel-wheel 1.3s ease-in-out infinite" }}
             />
           </div>
           <div className="text-left">
             <p
-              className="text-xs font-bold tracking-[0.2em] md:text-sm md:tracking-[0.28em]"
+              className="space-scroll-prompt text-base md:text-lg"
               style={{
-                color: "transparent",
-                backgroundImage: "linear-gradient(90deg, #69dcff 0%, #d8c4ff 52%, #ffd49b 100%)",
-                backgroundClip: "text",
-                WebkitBackgroundClip: "text",
+                color: "#f3ead8",
               }}
             >
               SCROLL TO TRAVEL
             </p>
-            <p className="mt-1 text-[10px] tracking-[0.14em]" style={{ color: "rgba(200,230,255,0.82)" }}>
-              SECTOR {String(stageIndex + 1).padStart(2, "0")} <span className="mx-1 text-[#8fe0ff]">/</span> {scanPct}% EXPLORED
+            <p className="space-scroll-meta mt-1 text-[9px]" style={{ color: "rgba(225,222,207,0.72)" }}>
+              SECTOR {String(stageIndex + 1).padStart(2, "0")} <span className="mx-1" style={{ color: "#d8c59b" }}>/</span> {scanPct}% EXPLORED
             </p>
           </div>
-          <span className="text-lg text-[#8fe0ff]" style={{ animation: "travel-chevron 1.3s ease-in-out infinite" }}>↓</span>
+          <span className="text-lg" style={{ color: "#d8c59b", animation: "travel-chevron 1.3s ease-in-out infinite" }}>↓</span>
         </div>
-        <div className="relative mt-3 h-px w-full overflow-hidden bg-cyan-100/20">
-          <div className="absolute inset-y-0 left-0 w-1/3 bg-[#8fe0ff]" style={{ animation: "travel-sweep 1.8s ease-in-out infinite", boxShadow: "0 0 10px #8fe0ff" }} />
+        <div className="relative mt-3 h-px w-full overflow-hidden" style={{ background: "rgba(219,205,169,.2)" }}>
+          <div className="absolute inset-y-0 left-0 w-1/3" style={{ background: "#d8c59b", animation: "travel-sweep 1.8s ease-in-out infinite", boxShadow: "0 0 10px rgba(216,197,155,.5)" }} />
         </div>
       </div>
     </div>
