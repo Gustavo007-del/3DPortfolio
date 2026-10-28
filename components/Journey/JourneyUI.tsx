@@ -165,7 +165,6 @@ export default function JourneyUI() {
             </div>
           )}
 
-          {!isTransitioning && (
           <div
             style={{
               position: "absolute",
@@ -181,7 +180,7 @@ export default function JourneyUI() {
             
             <button
               onClick={previous}
-              disabled={ isTransitioning ||currentIndex === 0}
+              disabled={currentIndex === 0}
               style={{
                 background: "transparent",
                 border: "none",
@@ -200,7 +199,7 @@ export default function JourneyUI() {
 
             <button
               onClick={next}
-              disabled={  isTransitioning ||  currentIndex === totalStops - 1}
+              disabled={currentIndex === totalStops - 1}
               style={{
                 background: "transparent",
                 border: "none",
@@ -220,7 +219,6 @@ export default function JourneyUI() {
               Next →
             </button>
           </div>
-          )}
         </>
       )}
     </div>

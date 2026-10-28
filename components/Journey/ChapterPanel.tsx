@@ -1,270 +1,121 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useJourney } from "./JourneyProvider";
 import { useRide } from "@/components/Island/boat-ride/boatRideStore";
+import { JOURNEY_STOPS } from "@/lib/journey";
 
-const CHAPTER_CARDS: Record<string, { left: { label: string; text: string }; right: { label: string; text: string } }> = {
+const CHAPTER_COPY: Record<string, { left: string; right: string }> = {
   dock: {
-    left: { label: "ORIGIN", text: "A quiet landing place before the journey begins." },
-    right: { label: "EXPLORE", text: "Follow the path through the island's hidden spaces." },
+    left: "A quiet landing place before the journey begins.",
+    right: "Follow the path through the island's hidden spaces.",
   },
   bridge: {
-    left: { label: "PROFILE", text: "Developer, designer, and builder of digital worlds." },
-    right: { label: "APPROACH", text: "Curious by nature. Precise when it matters." },
+    left: "Developer, designer, and builder of digital worlds.",
+    right: "Curious by nature. Precise when it matters.",
   },
   gate: {
-    left: { label: "TOOLKIT", text: "React, Next.js, Django, Three.js, and cloud systems." },
-    right: { label: "CRAFT", text: "Scalable foundations with an immersive human touch." },
+    left: "React, Next.js, Django, Three.js, and cloud systems.",
+    right: "Scalable foundations with an immersive human touch.",
   },
   courtyard: {
-    left: { label: "SELECTED WORK", text: "Products shaped from first idea to final interaction." },
-    right: { label: "FOCUS", text: "Performance, clarity, and experiences people remember." },
+    left: "Products shaped from first idea to final interaction.",
+    right: "Performance, clarity, and experiences people remember.",
   },
   tower: {
-    left: { label: "OPEN CHANNEL", text: "Have a project, idea, or difficult problem?" },
-    right: { label: "NEXT STEP", text: "Reach out and let us build something meaningful." },
+    left: "Have a project, idea, or difficult problem?",
+    right: "Reach out and let's build something meaningful.",
   },
 };
 
 export default function ChapterPanel() {
-  const {
-    started,
-    currentStop,
-    cameraState,
-  } = useJourney();
+  const { started, currentStop, cameraState } = useJourney();
   const ride = useRide();
-  const [cardsVisible, setCardsVisible] = useState(true);
 
-  useEffect(() => {
-    setCardsVisible(true);
-    const timeout = window.setTimeout(() => setCardsVisible(false), 3000);
-    return () => window.clearTimeout(timeout);
-  }, [currentStop.id]);
-
-  if (!started) return null;
-  // Hide chapter cards while riding (PLAN §10) — the HUD owns the corners.
-  if (ride.phase !== "idle") return null;
-
-  const cards = CHAPTER_CARDS[currentStop.id] ?? CHAPTER_CARDS.dock;
+  if (!started || ride.phase !== "idle") return null;
+  const copy = CHAPTER_COPY[currentStop.id] ?? CHAPTER_COPY.dock;
+  const transitioning = cameraState !== "idle";
 
   return (
-    <AnimatePresence>
-      <>
-        <style>{`
-          .island-chapter-card {
-            position: absolute;
-            top: max(24px, env(safe-area-inset-top));
-            width: min(24vw, 288px);
-            min-height: 116px;
-            padding: 17px 20px 17px 24px;
-            overflow: hidden;
-            border: 1px solid rgba(212, 176, 113, 0.36);
-            border-radius: 6px;
-            background: linear-gradient(135deg, rgba(23, 38, 33, 0.88), rgba(5, 13, 14, 0.7));
-            box-shadow: 0 16px 42px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 232, 184, 0.12);
-            backdrop-filter: blur(16px) saturate(120%);
-          }
-          .island-chapter-card::before {
-            content: "";
-            position: absolute;
-            inset: 0 auto 0 0;
-            width: 3px;
-            background: linear-gradient(to bottom, #e1bd78, rgba(124, 157, 119, 0.25));
-          }
-          .island-chapter-card::after {
-            content: "";
-            position: absolute;
-            right: -28px;
-            bottom: -42px;
-            width: 100px;
-            height: 100px;
-            border: 1px solid rgba(212, 176, 113, 0.12);
-            border-radius: 50%;
-          }
-          .island-chapter-card-left { left: max(24px, env(safe-area-inset-left)); }
-          .island-chapter-card-right { right: max(24px, env(safe-area-inset-right)); }
-          .island-chapter-card p { max-width: 215px; }
-          @media (max-width: 720px) {
-            .island-chapter-card {
-              top: max(16px, env(safe-area-inset-top));
-              width: calc(50% - 22px);
-              min-height: 104px;
-              padding: 14px 13px 14px 17px;
-            }
-            .island-chapter-card-left { left: 14px; }
-            .island-chapter-card-right { right: 14px; }
-            .island-chapter-card p { font-size: 10px !important; line-height: 1.45 !important; }
-            .island-chapter-card span { font-size: 9px !important; }
-          }
-          @media (max-width: 430px) {
-            .island-chapter-card {
-              position: relative;
-              top: auto;
-              left: auto;
-              right: auto;
-              width: 100%;
-              min-height: 0;
-              padding: 11px 14px 11px 17px;
-            }
-            .island-chapter-cards {
-              position: absolute;
-              top: max(12px, env(safe-area-inset-top));
-              left: 16px;
-              right: 16px;
-              display: grid;
-              gap: 8px;
-            }
-          }
-        `}</style>
-
-        <AnimatePresence>
-          {cardsVisible && (
-            <motion.div
-              className="island-chapter-cards"
-              initial={{ opacity: 0, y: -12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8, transition: { duration: 0.45 } }}
-              transition={{ duration: 0.5, delay: cameraState === "idle" ? 0 : 0.25 }}
-              style={{
-                position: "fixed",
-                inset: 0,
-                pointerEvents: "none",
-                zIndex: 100,
-              }}
-            >
-              {[{ side: "left", card: cards.left }, { side: "right", card: cards.right }].map(({ side, card }) => (
-                <div key={side} className={`island-chapter-card island-chapter-card-${side}`}>
-                  <span
-                    style={{
-                      display: "block",
-                      color: "#e1bd78",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: "0.2em",
-                      marginBottom: 10,
-                    }}
-                  >
-                    {card.label}
-                  </span>
-                  <p
-                    style={{
-                      color: "rgba(245, 239, 220, 0.8)",
-                      fontSize: 12,
-                      lineHeight: 1.6,
-                      margin: 0,
-                    }}
-                  >
-                    {card.text}
-                  </p>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {cameraState !== "idle" && (
+    <div
+      aria-live="polite"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        pointerEvents: "none",
+        overflow: "hidden",
+        color: "#f4edda",
+        textShadow: "0 2px 18px rgba(0,0,0,.75)",
+      }}
+    >
+      <style>{`
+        @keyframes island-side-drift {
+          0%, 100% { translate: 0 0; }
+          50% { translate: 0 -7px; }
+        }
+        @media (max-width: 560px) {
+          .island-side-copy { width: min(36vw, 150px) !important; }
+          .island-side-title { font-size: clamp(20px, 6vw, 34px) !important; }
+          .island-side-detail { font-size: 10px !important; }
+        }
+      `}</style>
+      <AnimatePresence mode="wait">
         <motion.div
-          initial={{
-            opacity: 0,
-          }}
-          animate={{
-            opacity: 1,
-          }}
-          exit={{
-            opacity: 0,
-          }}
-          transition={{
-            duration: 0.6,
-          }}
-          style={{
-            position: "fixed",
-            inset: 0,
-
-            pointerEvents: "none",
-
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-
-            flexDirection: "column",
-
-            zIndex: 100,
-          }}
+          key={currentStop.id}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: transitioning ? 1 : 0.82 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.45 }}
+          style={{ position: "absolute", inset: 0 }}
         >
           <motion.div
-            initial={{
-              y: 30,
-            }}
-            animate={{
-              y: 0,
-            }}
-            exit={{
-              y: -30,
-            }}
-            transition={{
-              duration: 0.8,
-            }}
+            className="island-side-copy"
+            initial={{ opacity: 0, x: -48 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             style={{
-              padding: "2rem clamp(1.5rem, 6vw, 5rem)",
-              borderRadius: "1.5rem",
-              background: "radial-gradient(ellipse at center, rgba(3, 14, 30, 0.82) 0%, rgba(3, 14, 30, 0.54) 52%, transparent 75%)",
-              boxShadow: "0 0 50px 28px rgba(3, 14, 30, 0.32)",
-              backdropFilter: "blur(5px)",
+              position: "absolute",
+              left: "max(28px, env(safe-area-inset-left))",
+              top: "43%",
+              width: "min(25vw, 300px)",
+              animation: "island-side-drift 6s ease-in-out infinite",
             }}
           >
-            <div
-              style={{
-                color: "#7ee2ff",
-                textAlign: "center",
-                letterSpacing: "0.5em",
-                fontSize: 14,
-                marginBottom: 16,
-                textShadow: "0 1px 12px rgba(3, 14, 30, 0.85)",
-              }}
-            >
-              JOURNEY
+            <div style={{ color: "#e1bd78", fontSize: 10, letterSpacing: ".32em", marginBottom: 13 }}>
+              {String(JOURNEY_STOPS.findIndex((stop) => stop.id === currentStop.id) + 1).padStart(2, "0")} / ISLAND
             </div>
-
-            <h1
-              style={{
-                color: "transparent",
-                backgroundImage: "linear-gradient(90deg, #58d7ff 0%, #d6c2ff 52%, #ffd29a 100%)",
-                backgroundClip: "text",
-                WebkitBackgroundClip: "text",
-
-                fontSize: 72,
-
-                fontWeight: 300,
-
-                margin: 0,
-
-                textAlign: "center",
-                textShadow: "0 2px 20px rgba(3, 14, 30, 0.9)",
-              }}
-            >
+            <h2 className="island-side-title" style={{ fontSize: "clamp(25px, 4vw, 52px)", fontWeight: 300, lineHeight: 1.02, margin: "0 0 15px", letterSpacing: ".04em" }}>
               {currentStop.title}
-            </h1>
+            </h2>
+            <p className="island-side-detail" style={{ color: "rgba(245,239,220,.84)", fontSize: 13, lineHeight: 1.7, margin: 0 }}>
+              {copy.left}
+            </p>
+          </motion.div>
 
-            <p
-              style={{
-                color: "#e6f7ff",
-
-                fontSize: 20,
-
-                marginTop: 16,
-
-                textAlign: "center",
-                textShadow: "0 2px 14px rgba(3, 14, 30, 0.95)",
-              }}
-            >
+          <motion.div
+            className="island-side-copy"
+            initial={{ opacity: 0, x: 48 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: "absolute",
+              right: "max(28px, env(safe-area-inset-right))",
+              bottom: "18%",
+              width: "min(23vw, 270px)",
+              textAlign: "right",
+              animation: "island-side-drift 7s ease-in-out infinite reverse",
+            }}
+          >
+            <div style={{ color: "#e1bd78", fontSize: 10, letterSpacing: ".28em", marginBottom: 12 }}>
               {currentStop.subtitle}
+            </div>
+            <p className="island-side-detail" style={{ color: "rgba(245,239,220,.84)", fontSize: 13, lineHeight: 1.7, margin: 0 }}>
+              {copy.right}
             </p>
           </motion.div>
         </motion.div>
-        )}
-      </>
-    </AnimatePresence>
+      </AnimatePresence>
+    </div>
   );
 }

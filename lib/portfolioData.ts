@@ -2,13 +2,19 @@
 
 export type Skill = { name: string; level: number; category: string };
 export type Project = {
+  slug: string;
   title: string;
   description: string;
+  role: string;
+  outcome: string;
+  caseStudy: string;
+  highlights: string[];
   tags: string[];
   coordinates: string;
   link?: string;
   sourceLink?: string;
   image?: string;
+  featured?: boolean;
 };
 
 export const profile = {
@@ -42,51 +48,89 @@ export const skills: Skill[] = [
 
 export const projects: Project[] = [
   {
+    slug: "temple-pooja-booking",
     title: "Temple Pooja Booking System",
     description:
       "Production Django platform for a live temple — real-time booking guards against double-bookings, a bilingual Malayalam/English calendar, and automated subscription reminders via Celery Beat.",
+    role: "Full-stack development",
+    outcome: "A production booking workflow with double-booking safeguards, bilingual scheduling, and automated subscription reminders.",
+    caseStudy: "Built a production booking platform around the needs of a live temple. The system combines a Malayalam and English calendar with booking safeguards and scheduled subscription reminders, bringing the core reservation workflow into one place.",
+    highlights: ["Booking checks prevent double-bookings", "Calendar supports Malayalam and English", "Celery Beat sends subscription reminders"],
     tags: ["Django", "Celery", "PostgreSQL"],
     coordinates: "12.3°N — Live Production Site",
+    featured: true,
   },
   {
+    slug: "3d-island-portfolio",
     title: "3D Island Portfolio",
     description:
       "This very site — a hand-tuned sunset island in React Three Fiber, with custom GLSL sky gradients, reflective water shaders, and this cinematic scroll-driven camera path.",
+    role: "Design and full-stack development",
+    outcome: "A portfolio presented as an explorable 3D world, with a scroll-driven journey between chapters.",
+    caseStudy: "Designed and developed an interactive portfolio that turns the usual section-by-section page into a journey from space to an island. The experience combines a custom Three.js scene, shader work, camera choreography, and HTML overlays for the portfolio content.",
+    highlights: ["React Three Fiber world with custom scene elements", "GLSL sky and reflective water", "Scroll-driven camera journey with chapter navigation"],
     tags: ["Three.js", "R3F", "GLSL", "Next.js"],
     coordinates: "You Are Here",
+    featured: true,
   },
   {
+    slug: "texfix-mobile-app",
     title: "TexFix Mobile App",
     description:
       "A mobile app I built for TexFix, bringing a focused, practical workflow to the palm of the user's hand.",
+    role: "Mobile app development",
+    outcome: "A focused mobile workflow delivered for TexFix.",
+    caseStudy: "Built a mobile app for TexFix with a practical, focused workflow designed for everyday use. The project extends the portfolio beyond web applications into mobile product development.",
+    highlights: ["Mobile-first product experience", "Workflow tailored for TexFix", "React Native experience"],
     tags: ["Mobile", "React Native", "API"],
     coordinates: "Mobile Product — TexFix",
+    featured: true,
   },
   {
+    slug: "natuvipani-farmer-app",
     title: "Natuvipani Farmer App",
     description:
       "A farmer-focused mobile app designed to make everyday agricultural information and services easier to access.",
+    role: "Mobile product development",
+    outcome: "Agricultural information and services brought into a farmer-focused mobile experience.",
+    caseStudy: "Created a farmer-focused mobile app to make everyday agricultural information and services easier to access. The product is designed around a specific audience and the practical needs of daily use.",
+    highlights: ["Designed for a farmer audience", "Mobile access to agricultural services", "React Native experience"],
     tags: ["Mobile", "Farmers", "Backend"],
     coordinates: "Digital Tools — Natuvipani",
   },
   {
+    slug: "movie-booking-system",
     title: "Movie Booking System",
     description:
       "A streamlined movie booking experience for browsing shows, choosing seats, and managing reservations.",
+    role: "Full-stack development",
+    outcome: "A connected flow for show discovery, seat selection, and reservation management.",
+    caseStudy: "Developed a movie booking system that brings show browsing, seat selection, and reservation management together in one user flow.",
+    highlights: ["Browse available shows", "Choose seats", "Manage reservations"],
     tags: ["Web App", "Booking", "Payments"],
     coordinates: "Entertainment Platform",
   },
   {
+    slug: "eventmaster",
     title: "EventMaster",
     description:
       "An event management platform for organizing event details, registrations, schedules, and attendees in one place.",
+    role: "Full-stack development",
+    outcome: "Event details, registrations, schedules, and attendee information organized in one platform.",
+    caseStudy: "Built an event management platform to centralize the information and tasks involved in running events, from registration and schedules to attendee coordination.",
+    highlights: ["Event information management", "Registration and schedule workflows", "Attendee coordination"],
     tags: ["Events", "Dashboard", "Web App"],
     coordinates: "Event Operations Platform",
   },
   {
+    slug: "kandakalankavu",
     title: "Kandakalankavu",
     description:
       "A dedicated digital experience for Kandakalankavu, bringing its identity and information together in a clear, accessible space.",
+    role: "Web development",
+    outcome: "A dedicated online home that presents Kandakalankavu's identity and information clearly.",
+    caseStudy: "Created a dedicated digital experience for Kandakalankavu, organizing its identity and information into a clear online destination.",
+    highlights: ["Dedicated digital presence", "Identity-led presentation", "Clear information structure"],
     tags: ["Website", "Branding", "Community"],
     coordinates: "Cultural Digital Experience",
   },

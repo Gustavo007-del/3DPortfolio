@@ -46,12 +46,10 @@ export function JourneyProvider({
   }
 
   function next() {
-    if (isTransitioning) return;
     setCurrentIndex((i) => Math.min(i + 1, JOURNEY_STOPS.length - 1));
   }
 
   function previous() {
-    if (isTransitioning) return;
     setCurrentIndex((i) => Math.max(i - 1, 0));
   }
   function beginTransition() {

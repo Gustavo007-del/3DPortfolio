@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useWorldState } from "@/components/World/WorldState";
 
 type Anchor = "left" | "right";
@@ -223,6 +224,18 @@ export default function SpaceOverlay() {
           backgroundImage: "repeating-linear-gradient(to bottom, rgba(150,220,255,0.6) 0px, transparent 1px, transparent 3px)",
         }}
       />
+
+      {liveProgress < 0.12 && (
+        <Link
+          href="/projects"
+          className="absolute top-20 right-8 md:right-14 pointer-events-auto inline-flex items-center gap-3 border px-4 py-3 font-mono text-[10px] tracking-[0.18em] text-cyan-50 transition-colors hover:bg-cyan-100/10"
+          style={{ borderColor: "rgba(143,224,255,0.38)", background: "rgba(3,13,30,0.45)", textDecoration: "none" }}
+        >
+          <span style={{ color: "rgba(143,224,255,0.66)" }}>01—03</span>
+          <span>VIEW SELECTED PROJECTS</span>
+          <span aria-hidden="true">↗</span>
+        </Link>
+      )}
 
       {[
         { top: "1.5rem", left: "1.5rem", borderTop: "1px solid", borderLeft: "1px solid" },
