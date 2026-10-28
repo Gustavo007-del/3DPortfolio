@@ -110,6 +110,18 @@
 :global(.mini-phone b) { position: absolute; top: 8px; left: 36px; width: 20px; height: 4px; border-radius: 4px; background: #ddd5e877; }
 :global(.mini-phone i) { height: 24px; border-radius: 4px; background: color-mix(in srgb, var(--art-accent), transparent 60%); }
 :global(.mini-phone i:first-of-type) { height: 46px; background: color-mix(in srgb, var(--art-accent), transparent 30%); }
+:global(.mini-taxonomy) { width: 148px; padding: 12px; border: 1px solid color-mix(in srgb, var(--art-accent), transparent 45%); background: rgba(13,21,16,.78); transform: rotate(5deg); box-shadow: 14px 18px 34px #0006; }
+:global(.mini-taxonomy b) { display: block; margin-bottom: 12px; color: var(--art-accent); font: 19px var(--font-mono), monospace; }
+:global(.mini-taxonomy i) { display: block; height: 8px; margin-top: 7px; background: linear-gradient(90deg, color-mix(in srgb, var(--art-accent), transparent 25%), transparent); }
+:global(.mini-taxonomy i:nth-of-type(2)) { width: 82%; }
+:global(.mini-taxonomy i:nth-of-type(3)) { width: 68%; }
+:global(.mini-taxonomy i:nth-of-type(4)) { width: 91%; }
+:global(.mini-surface) { display: grid; width: 150px; height: 108px; grid-template-columns: repeat(3,1fr); gap: 2px; transform: perspective(190px) rotateX(57deg) rotateZ(-31deg) scale(1.12); }
+:global(.mini-surface i) { background: color-mix(in srgb, var(--art-accent), transparent 58%); border: 1px solid color-mix(in srgb, var(--art-accent), transparent 25%); }
+:global(.mini-surface i:nth-child(2)), :global(.mini-surface i:nth-child(4)), :global(.mini-surface i:nth-child(5)) { background: color-mix(in srgb, var(--art-accent), transparent 24%); box-shadow: 0 0 18px color-mix(in srgb, var(--art-accent), transparent 50%); }
+:global(.mini-inventory) { display: grid; width: 140px; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 12px; border: 1px solid color-mix(in srgb, var(--art-accent), transparent 45%); background: rgba(16,20,20,.7); transform: rotate(-5deg); box-shadow: 14px 18px 34px #0006; }
+:global(.mini-inventory i) { aspect-ratio: 1; background: color-mix(in srgb, var(--art-accent), transparent 42%); border-bottom: 3px solid var(--art-accent); }
+:global(.mini-inventory i:nth-child(2n)) { transform: translateY(7px); opacity: .63; }
 :global(.motif-field) { display: flex; align-items: end; justify-content: center; gap: 9px; }
 :global(.motif-field span) { width: 14px; height: 60%; border-radius: 100% 0; background: var(--art-accent); transform: rotate(35deg); opacity: .76; }
 :global(.motif-field span:nth-child(2n)) { height: 43%; opacity: .5; }

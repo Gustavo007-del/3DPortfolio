@@ -33,7 +33,7 @@ export default function ProjectIndex() {
                 <span className={styles.cardNumber}>{String(index + 1).padStart(2, "0")}</span>
               </Link>
               <div className={styles.cardInfo}>
-                <div><span className={styles.cardType}>{project.role} · {project.tags.slice(0, 2).join(" · ")}</span><h3><Link href={`/projects/${project.slug}`}>{project.title}</Link></h3></div>
+                <div><span className={styles.cardType}>{project.role} · {project.tags.join(" · ")}</span><h3><Link href={`/projects/${project.slug}`}>{project.title}</Link></h3></div>
                 <Link className={styles.arrowLink} href={`/projects/${project.slug}`} aria-label={`View ${project.title} case study`}>↗</Link>
               </div>
               <p className={styles.outcome}>{project.outcome}</p>
@@ -43,11 +43,11 @@ export default function ProjectIndex() {
       </section>
 
       <section className={styles.moreSection} aria-labelledby="more-title">
-        <div className={styles.sectionHead}><p className={styles.kicker}>MORE WORK</p><h2 id="more-title">Other projects</h2><span>04 — 07</span></div>
+        <div className={styles.sectionHead}><p className={styles.kicker}>MORE WORK</p><h2 id="more-title">Other projects</h2><span>{String(featured.length + 1).padStart(2, "0")} — {String(projects.length).padStart(2, "0")}</span></div>
         <div className={styles.projectList}>
           {more.map((project, index) => (
             <Link className={styles.listItem} href={`/projects/${project.slug}`} key={project.slug}>
-              <span className={styles.listNumber}>{String(index + 4).padStart(2, "0")}</span>
+              <span className={styles.listNumber}>{String(index + featured.length + 1).padStart(2, "0")}</span>
               <div className={styles.listArt}><ProjectArtwork project={project} compact /></div>
               <div className={styles.listCopy}><h3>{project.title}</h3><p>{project.role} · {project.outcome}</p><div>{project.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></div>
               <span className={styles.listArrow}>↗</span>
