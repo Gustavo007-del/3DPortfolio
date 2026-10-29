@@ -6,8 +6,10 @@ import { useControls } from "leva";
 import { TransformControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import LightDebugHelper from "./LightDebugHelper";
+import { useIslandSettings } from "./islandSettings";
 
 export default function LightController() {
+  const settings = useIslandSettings();
   const { scene } = useThree();
 
   const lightRef = useRef<THREE.DirectionalLight | null>(null);
@@ -133,8 +135,8 @@ export default function LightController() {
       <directionalLight
         ref={setLightRef}
         position={[posX, posY, posZ]}
-        intensity={intensity}
-        color={color}
+        intensity={intensity * (settings.timeOfDay === "night" ? 0.1 : settings.timeOfDay === "dusk" ? 0.55 : 1) * settings.brightness}
+        color={settings.timeOfDay === "night" ? "#a6bce4" : color}
         castShadow
         shadow-mapSize={[4096, 4096]}
         shadow-bias={bias}

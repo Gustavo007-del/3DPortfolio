@@ -6,6 +6,7 @@ import { BufferGeometry, BufferAttribute, LineSegments, Vector3 } from 'three';
 import BirdController from './BirdController';
 import { BirdFieldHandle } from './BirdField';
 import { FlockingWeights, BirdRuntimeParams, FieldConfig } from './birdTypes';
+import { useIslandSettings } from '@/components/Island/islandSettings';
 
 const FIELD_NAMES = ['Castle', 'Bridge', 'Dock', 'Mountains', 'Sea'];
 const MAX_BIRDS_PER_FIELD = 250;
@@ -122,6 +123,7 @@ const BASE_FIELD_DEFS: FieldConfig[] = [
 ];
 
 export default function BirdDebug() {
+  const settings = useIslandSettings();
   const {
     enabled, birdCount, fieldRadius, fieldHeight, orbitSpeed, wanderStrength,
     separationWeight, alignmentWeight, cohesionWeight, glideChance,
@@ -160,17 +162,18 @@ export default function BirdDebug() {
     const o: Partial<Record<string, Partial<FieldConfig>>> = {};
     for (const name of FIELD_NAMES) {
       const ov: Partial<FieldConfig> = {};
-      if (birdCount > 0) ov.count = birdCount;
+      const defaultCount = BASE_FIELD_DEFS.find((field) => field.name === name)?.count ?? 20;
+      ov.count = Math.max(1, Math.round((birdCount > 0 ? birdCount : defaultCount) * settings.birdActivity));
       if (fieldRadius > 0) ov.radius = fieldRadius;
       if (fieldHeight > 0) ov.height = fieldHeight;
       o[name] = ov;
     }
     return o;
-  }, [birdCount, fieldRadius, fieldHeight]);
+  }, [birdCount, fieldRadius, fieldHeight, settings.birdActivity]);
 
   const displayFields = useMemo(() => BASE_FIELD_DEFS.map(f => ({ ...f, ...fieldOverrides[f.name] })), [fieldOverrides]);
 
-  if (!enabled) return null;
+  if (!enabled || !settings.birds) return null;
 
   return (
     <>

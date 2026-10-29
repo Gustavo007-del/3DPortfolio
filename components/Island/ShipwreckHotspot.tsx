@@ -1,8 +1,8 @@
 // components/Island/ShipwreckHotspot.tsx
 //
 // DOM side of the shipwreck interaction (PLAN.md §6.2):
-//  - hover the wreck → pointer cursor + anchored info card (≤80 ms open,
-//    150 ms close grace). Cursor off the wreck → card goes away.
+//  - hover the wreck → pointer cursor + screen-edge project board.
+//    A short close grace lets the pointer travel from the wreck to the board.
 //  - moving onto the card itself keeps it open (standard menu affordance);
 //    leaving the card closes it again.
 //  - click (not drag) → router.push("/Cart"); touch: first tap opens,
@@ -22,9 +22,10 @@ import {
   type WreckPointerPayload,
 } from "./FortEffectsController";
 import { getRidePhase } from "./boat-ride/boatRideStore";
+import styles from "./ShipwreckBoard.module.css";
 
 const ROUTE = "/Cart";
-const CLOSE_GRACE_MS = 150;
+const CLOSE_GRACE_MS = 3200;
 const DRAG_SLOP_PX = 5;
 
 export default function ShipwreckHotspot() {
@@ -79,6 +80,7 @@ export default function ShipwreckHotspot() {
     clearCloseTimer();
     setBarOpen(false);
     tapArmedRef.current = false;
+    cardHoverRef.current = false;
   }, [clearCloseTimer]);
 
   const navigate = useCallback(() => {
@@ -202,46 +204,33 @@ export default function ShipwreckHotspot() {
     return () => window.removeEventListener("pagehide", onUnload);
   }, []);
 
-  const visible = barOpen && payload.anchorVisible;
+  const visible = barOpen;
 
   return (
     <>
-      {/* Anchored info card (default UI, PLAN §6.2) */}
+      {/* Screen-edge board stays clear of the island while the wreck is hovered. */}
       <div
         role="dialog"
         aria-label="Shipwreck"
         aria-hidden={!visible}
-        className={`pointer-events-none fixed z-40 transition-all duration-200 motion-reduce:transition-none ${
-          visible ? "opacity-100" : "opacity-0"
-        }`}
-        style={{
-          left: payload.anchorX,
-          top: payload.anchorY,
-          transform: visible
-            ? "translate(-50%, -100%)"
-            : "translate(-50%, -100%) translateY(6px)",
-        }}
+        className={`${styles.position} ${visible ? styles.visible : ""}`}
       >
         <div
           onPointerEnter={onCardEnter}
           onPointerLeave={onCardLeave}
-          className={`-mt-3 w-64 rounded-2xl border border-white/15 bg-slate-900/85 p-4 shadow-2xl backdrop-blur-md ${
-            visible ? "pointer-events-auto" : "pointer-events-none"
-          }`}
+          className={styles.board}
         >
-          <p className="text-xs font-semibold uppercase tracking-widest text-cyan-300">
-            Somewhere off the bow
-          </p>
-          <h3 className="mt-1 text-lg font-bold text-white">Shipwreck</h3>
-          <p className="mt-1 text-sm text-slate-300">
-            Every project here started as a wreck somebody refused to abandon.
-          </p>
+          <span className={styles.pin} aria-hidden="true" />
+          <button type="button" className={styles.close} onClick={dismiss} aria-label="Close shipwreck board">×</button>
+          <p className={styles.eyebrow}>A discovery awaits</p>
+          <h3>Shipwreck</h3>
+          <p className={styles.description}>A route to the work beyond this island.</p>
           <button
             type="button"
             onClick={navigate}
-            className="mt-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 px-4 py-1.5 text-sm font-semibold text-white transition hover:brightness-110"
+            className={styles.action}
           >
-            View projects <span aria-hidden>→</span>
+            View projects <span aria-hidden>↗</span>
           </button>
         </div>
       </div>

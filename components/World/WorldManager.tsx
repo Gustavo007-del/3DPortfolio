@@ -9,6 +9,7 @@ import WorldCamera from "@/components/canvas/WorldCamera";
 import LODGroup from "@/components/each-frame/WorldLOD";
 import IslandScene from "@/components/Island/IslandScene";
 import ShipwreckHotspot from "@/components/Island/ShipwreckHotspot";
+import IslandControls from "@/components/Island/IslandControls";
 import AudioZones from "@/components/Island/AudioZones";
 import { AudioProvider } from "@/components/Audio/AudioProvider";
 import AudioController from "@/components/Audio/AudioController";
@@ -55,6 +56,7 @@ function JourneyOverlay() {
       {/* DOM side of the shipwreck interaction (PLAN §6.2) — must stay
           outside the Canvas */}
       <ShipwreckHotspot />
+      <IslandControls />
     </>
   );
 }

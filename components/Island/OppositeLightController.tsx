@@ -4,8 +4,10 @@ import * as THREE from "three";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useControls } from "leva";
 import LightDebugHelper from "./LightDebugHelper";
+import { useIslandSettings } from "./islandSettings";
 
 export default function OppositeLightController() {
+  const settings = useIslandSettings();
   const lightRef = useRef<THREE.DirectionalLight | null>(null);
   const targetRef = useRef<THREE.Object3D>(null!);
 
@@ -60,8 +62,8 @@ export default function OppositeLightController() {
       <directionalLight
         ref={setLightRef}
         position={[posX, posY, posZ]}
-        intensity={intensity}
-        color={color}
+        intensity={intensity * (settings.timeOfDay === "night" ? 0.2 : settings.timeOfDay === "dusk" ? 0.6 : 1) * settings.brightness}
+        color={settings.timeOfDay === "night" ? "#8199c7" : color}
         castShadow={castShadow}
         shadow-mapSize={[4096, 4096]}
         target={targetRef.current || undefined}

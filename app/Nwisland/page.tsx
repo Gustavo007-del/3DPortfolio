@@ -18,6 +18,7 @@ import ChapterPanel from "@/components/Journey/ChapterPanel";
 import { WindProvider } from "@/components/fire/WindContext";
 import AudioZones from "@/components/Island/AudioZones";
 import ShipwreckHotspot from "@/components/Island/ShipwreckHotspot";
+import IslandControls from "@/components/Island/IslandControls";
 import BoatRideHUD from "@/components/Island/boat-ride/BoatRideHUD";
 import { useRide } from "@/components/Island/boat-ride/boatRideStore";
 
@@ -59,6 +60,7 @@ export default function Page() {
           <ChapterPanel />
           {/* Shipwreck hotspot UI — DOM, must be outside the Canvas (PLAN §6.2) */}
           <ShipwreckHotspot />
+          <IslandControls />
           <BoatRideHUD />
           <AudioButton />
           <AudioController />

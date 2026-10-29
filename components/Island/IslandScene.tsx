@@ -25,6 +25,7 @@ import { ParticleController } from "@/components/Environment/ParticleEngine/Part
 import BoatRideController from "./boat-ride/BoatRideController";
 import BoatRideCamera from "./boat-ride/BoatRideCamera";
 import { useRide } from "./boat-ride/boatRideStore";
+import { useIslandSettings } from "./islandSettings";
 
 /** Mounts the chase camera only while a ride is active (PLAN §2.1/§9). */
 function BoatRideCameraGate() {
@@ -88,6 +89,7 @@ function Mountain({
 }
 
 export default function IslandScene({ active = true }: { active?: boolean }) {
+  const settings = useIslandSettings();
   const [rocks, setRocks] = useState<THREE.Mesh[]>([]);
 
   return (
@@ -106,10 +108,10 @@ export default function IslandScene({ active = true }: { active?: boolean }) {
       <MountainController meshes={rocks} />
 
       <WaterPlaneController />
-      <MistController />
+      {settings.mist && <MistController />}
       {/* <FireflyController />     */}
        <BirdDebug />
-      <ParticleController debugEnabled={process.env.NODE_ENV==="development"} />
+      {settings.particles && <ParticleController debugEnabled={process.env.NODE_ENV==="development"} />}
 
       {/* Fort idle motion + cursor magnification lens (single transform writer). */}
       <FortEffectsController active={active} />

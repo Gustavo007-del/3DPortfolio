@@ -6,9 +6,11 @@ import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 import * as THREE from "three";
 import { useWorldStateOptional } from "@/components/World/WorldState";
+import { useIslandSettings } from "./islandSettings";
 
 export default function SceneAtmosphereController({ active = true }: { active?: boolean }) {
-  const { gl } = useThree();
+  const { gl, scene } = useThree();
+  const settings = useIslandSettings();
 
   // Fog here is only for the STEADY Island view. During TRANSITION_TO_ISLAND /
   // TRANSITION_TO_SPACE, CloudTransition.tsx owns scene.fog exclusively (it
@@ -38,13 +40,23 @@ export default function SceneAtmosphereController({ active = true }: { active?: 
   });
 
   useEffect(() => {
-    gl.toneMappingExposure = exposure;
-  }, [exposure, gl]);
+    const timeFactor = settings.timeOfDay === "night" ? 0.68 : settings.timeOfDay === "dusk" ? 0.86 : 1;
+    gl.toneMappingExposure = exposure * settings.brightness * timeFactor;
+  }, [exposure, gl, settings.brightness, settings.timeOfDay]);
+
+  useEffect(() => {
+    if (!fogOn) return;
+    scene.fog = settings.fog
+      ? new THREE.Fog(fogColor, Math.max(10, fogNear / settings.fogStrength), fogFar / settings.fogStrength)
+      : null;
+  }, [fogOn, scene, settings.fog, settings.fogStrength, fogColor, fogNear, fogFar]);
+
+  const ambientFactor = settings.timeOfDay === "night" ? 0.3 : settings.timeOfDay === "dusk" ? 0.67 : 1;
+  const ambientTint = settings.timeOfDay === "night" ? "#8faad6" : ambientColor;
 
   return (
     <>
-      <ambientLight intensity={ambientIntensity} color={ambientColor} />
-      {fogOn && <fog attach="fog" args={[fogColor, fogNear, fogFar]} />}
+      <ambientLight intensity={ambientIntensity * ambientFactor * settings.brightness} color={ambientTint} />
     </>
   );
 }

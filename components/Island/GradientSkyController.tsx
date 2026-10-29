@@ -4,6 +4,7 @@
 import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
 import { useControls } from "leva";
+import { useIslandSettings } from "./islandSettings";
 
 const vertexShader = `
   varying vec3 vWorldPosition;
@@ -39,6 +40,7 @@ const fragmentShader = `
 `;
 
 export default function GradientSkyController() {
+  const settings = useIslandSettings();
   const materialRef = useRef<THREE.ShaderMaterial>(null!);
 
   const { colorTop, colorMid, colorHorizon, midStop, horizonStop, blurAmount, offset, exponent } =
@@ -68,15 +70,20 @@ export default function GradientSkyController() {
   );
 
   useEffect(() => {
-    uniforms.colorTop.value.set(colorTop);
-    uniforms.colorMid.value.set(colorMid);
-    uniforms.colorHorizon.value.set(colorHorizon);
+    const palette = settings.timeOfDay === "night"
+      ? ["#050e26", "#1c3155", "#536583"]
+      : settings.timeOfDay === "dusk"
+        ? ["#303650", "#bd8070", "#f2bd88"]
+        : [colorTop, colorMid, colorHorizon];
+    uniforms.colorTop.value.set(palette[0]);
+    uniforms.colorMid.value.set(palette[1]);
+    uniforms.colorHorizon.value.set(palette[2]);
     uniforms.midStop.value = midStop;
     uniforms.horizonStop.value = horizonStop;
     uniforms.blurAmount.value = blurAmount;
     uniforms.offset.value = offset;
     uniforms.exponent.value = exponent;
-  }, [colorTop, colorMid, colorHorizon, midStop, horizonStop, blurAmount, offset, exponent, uniforms]);
+  }, [colorTop, colorMid, colorHorizon, midStop, horizonStop, blurAmount, offset, exponent, uniforms, settings.timeOfDay]);
 
   return (
     <mesh>
