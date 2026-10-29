@@ -176,8 +176,9 @@ export default function WorldManager({
       <TransitionManagerProvider>
         <JourneyProvider>
           <AudioProvider>
-            <div className="relative w-screen h-screen overflow-hidden" style={{ background: "#050510" }}>
+            <div className="relative w-screen h-dvh overflow-hidden" style={{ background: "#050510" }}>
               <Canvas
+                style={{ touchAction: "none" }}
                 shadows
                 dpr={[1, 1.5]} // cap pixel ratio: 2x/3x screens multiply shadow + reflector + postFX cost
                 frameloop={active ? "always" : "demand"}

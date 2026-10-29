@@ -11,7 +11,7 @@ export default function ProjectIndex() {
     <main className={styles.page}>
       <header className={styles.header}>
         <Link className={styles.wordmark} href="/">SHIJIL<span>.DEV</span></Link>
-        <nav aria-label="Main navigation"><Link href="/">← Island</Link><a href="#featured-title">Featured work ↓</a></nav>
+        <nav aria-label="Main navigation"><Link href="/">← Island</Link><Link href="/story">Story ↗</Link><a href="#featured-title">Featured work ↓</a></nav>
       </header>
 
       <section className={styles.hero}>

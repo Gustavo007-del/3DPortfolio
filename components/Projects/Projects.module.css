@@ -163,6 +163,10 @@
   .caseFooter { gap: 14px; font-size: 11px; }
 }
 
+@media (max-width: 500px) {
+  .header nav a:last-child { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page * { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }

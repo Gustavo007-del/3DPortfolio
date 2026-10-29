@@ -97,6 +97,7 @@ export default function WorldCamera() {
   useEffect(() => {
     const el = gl.domElement;
     function onPointerDown(e: PointerEvent) {
+      if (e.pointerType === "touch") return;
       if (phaseRef.current !== "SPACE") return;
       isDragging.current = true;
       lastPointer.current = { x: e.clientX, y: e.clientY };

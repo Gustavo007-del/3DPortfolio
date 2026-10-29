@@ -21,7 +21,7 @@ const STAGES: { at: number; content: StageContent }[] = [
     },
   },
   {
-    at: 0.12,
+    at: 0.08,
     content: {
       id: "build",
       eyebrow: "02 / THE TOOLKIT",
@@ -32,7 +32,7 @@ const STAGES: { at: number; content: StageContent }[] = [
     },
   },
   {
-    at: 0.24,
+    at: 0.16,
     content: {
       id: "render",
       eyebrow: "03 / THE EXPERIENCE",
@@ -43,7 +43,7 @@ const STAGES: { at: number; content: StageContent }[] = [
     },
   },
   {
-    at: 0.36,
+    at: 0.26,
     content: {
       id: "approach",
       eyebrow: "04 / THE APPROACH",
@@ -54,8 +54,8 @@ const STAGES: { at: number; content: StageContent }[] = [
     },
   },
   {
-    // The final message finishes at 45% of the trajectory.
-    at: 0.5,
+    // The last message is visible well before clouds begin at progress 0.37.
+    at: 0.46,
     content: {
       id: "empty",
       eyebrow: "",
@@ -68,27 +68,12 @@ const STAGES: { at: number; content: StageContent }[] = [
 ];
 
 const SKILLS = ["DJANGO", "R3F","KUBERNETES", "REDIS","WEBSOCKETS"];
+const STAGE_DWELL_MS = 600;
 
-function useTypewriter(text: string, speed = 22, delay = 0) {
-  const [out, setOut] = useState("");
-  useEffect(() => {
-    setOut("");
-    if (!text) return;
-    let i = 0;
-    let interval: ReturnType<typeof setInterval> | undefined;
-    const timeout = setTimeout(() => {
-      interval = setInterval(() => {
-        i++;
-        setOut(text.slice(0, i));
-        if (i >= text.length) clearInterval(interval);
-      }, speed);
-    }, delay);
-    return () => {
-      clearTimeout(timeout);
-      if (interval) clearInterval(interval);
-    };
-  }, [text, speed, delay]);
-  return out;
+// Even a large wheel or touch gesture must show every story beat in order.
+export function nextStageIndex(current: number, desired: number, elapsedMs: number) {
+  if (current === desired || elapsedMs < STAGE_DWELL_MS) return current;
+  return current + Math.sign(desired - current);
 }
 
 // Maps each stage's anchor/vertical combo to actual position classes+styles.
@@ -102,7 +87,7 @@ function getPositionStyle(anchor: Anchor, vertical: "top" | "mid"): React.CSSPro
     textAlign: anchor === "right" ? "right" : "left",
   };
   if (vertical === "top") {
-    base.top = "clamp(9rem, 24vh, 15rem)";
+    base.top = "clamp(7rem, 19vh, 11rem)";
   } else {
     base.top = "50%";
     base.transform = "translateY(-50%)";
@@ -118,10 +103,10 @@ function getPositionStyle(anchor: Anchor, vertical: "top" | "mid"): React.CSSPro
 export default function SpaceOverlay() {
   const { phase, progressRef } = useWorldState();
   const [stageIndex, setStageIndex] = useState(0);
-  const [fading, setFading] = useState(false);
   const [liveProgress, setLiveProgress] = useState(0);
   const rafRef = useRef<number | undefined>(undefined);
   const stageIndexRef = useRef(0);
+  const lastStageChangeRef = useRef(0);
   const publishedProgressRef = useRef(0);
   const lastPublishRef = useRef(0);
 
@@ -140,17 +125,15 @@ export default function SpaceOverlay() {
         setLiveProgress(p);
       }
 
-      let next = 0;
+      let desired = 0;
       for (let i = STAGES.length - 1; i >= 0; i--) {
-        if (p >= STAGES[i].at) { next = i; break; }
+        if (p >= STAGES[i].at) { desired = i; break; }
       }
+      const next = nextStageIndex(stageIndexRef.current, desired, now - lastStageChangeRef.current);
       if (next !== stageIndexRef.current) {
         stageIndexRef.current = next;
-        setFading(true);
-        setTimeout(() => {
-          setStageIndex(next);
-          setFading(false);
-        }, 180);
+        lastStageChangeRef.current = now;
+        setStageIndex(next);
       }
       rafRef.current = requestAnimationFrame(tick);
     }
@@ -161,12 +144,6 @@ export default function SpaceOverlay() {
   }, [phase, progressRef]);
 
   const { content } = STAGES[stageIndex];
-  const heading = useTypewriter(fading ? "" : content.heading, 28);
-  const body = useTypewriter(
-    fading ? "" : content.body,
-    13,
-    content.heading.length * 28 + 100
-  );
   const scanPct = Math.round(liveProgress * 100);
   const positionStyle = getPositionStyle(content.anchor, content.vertical);
 
@@ -204,7 +181,7 @@ export default function SpaceOverlay() {
         .space-display-heading {
           color: #f3ead8;
           font-family: var(--font-display), Georgia, serif;
-          font-size: clamp(2.5rem, 5vw, 4.5rem);
+          font-size: clamp(2rem, 3.5vw, 3.4rem);
           font-weight: 400;
           letter-spacing: -.045em;
           line-height: .98;
@@ -238,9 +215,14 @@ export default function SpaceOverlay() {
         .space-eyebrow { color: rgba(219, 205, 169, .76); }
         .space-accent-line { background: rgba(219, 205, 169, .62); }
         .space-stage-index { font-family: var(--font-mono), monospace; }
+        .space-swipe-label { display: none; }
+        @media (pointer: coarse) {
+          .space-scroll-label { display: none; }
+          .space-swipe-label { display: inline; }
+        }
         @media (max-width: 640px) {
-          .space-display-heading { font-size: clamp(2.25rem, 9vw, 3.25rem); }
-          .space-copy-panel { top: 27% !important; left: 24px !important; right: 24px !important; width: auto !important; max-width: none !important; }
+          .space-display-heading { font-size: clamp(1.9rem, 7.5vw, 2.6rem); }
+          .space-copy-panel { top: 23% !important; left: 24px !important; right: 24px !important; width: auto !important; max-width: none !important; }
           .space-copy-panel[data-anchor="right"] { text-align: right !important; }
           .space-project-link { top: auto !important; bottom: 9.5rem; right: 18px !important; padding: 10px 13px !important; font-size: 9px !important; }
           .space-corner { display: none; }
@@ -270,7 +252,7 @@ export default function SpaceOverlay() {
         }}
       />
 
-      {liveProgress < 0.12 && (
+      {liveProgress < 0.08 && (
         <Link
           href="/projects"
           className="space-project-link absolute top-20 right-8 md:right-14 pointer-events-auto inline-flex items-center gap-3 border px-4 py-3 text-[10px] transition-colors"
@@ -337,8 +319,7 @@ export default function SpaceOverlay() {
       >
         <div
           key={content.id}
-          className={fading ? "" : "hud-fade-in"}
-          style={{ opacity: fading ? 0 : 1, transition: "opacity 180ms ease" }}
+          className="hud-fade-in"
         >
           <div className={`flex items-center gap-3 mb-5 ${content.anchor === "right" ? "justify-end" : ""}`}>
             {content.anchor === "left" && <div className="w-8 h-px space-accent-line" />}
@@ -353,7 +334,7 @@ export default function SpaceOverlay() {
               minHeight: "1.1em",
             }}
           >
-            {heading}
+            {content.heading}
             <span
               className="inline-block w-[3px] h-[0.85em] ml-1 align-middle"
               style={{ background: "#d8c59b", animation: "hud-pulse 1.4s ease-in-out infinite" }}
@@ -364,18 +345,19 @@ export default function SpaceOverlay() {
   style={{
     textAlign: content.anchor,
     maxWidth: "34rem",
+    marginLeft: content.anchor === "right" ? "auto" : 0,
     minHeight: "3.5rem",
     hyphens: "none",
   }}
 >
-            {body}
+            {content.body}
           </p>
         </div>
       </div>
       )}
 
       <div className="absolute top-1/2 right-8 -translate-y-1/2 hidden lg:flex flex-col items-end gap-4">
-        {STAGES.map((s, i) => (
+        {STAGES.slice(0, -1).map((s, i) => (
           <div key={s.content.id} className="flex items-center gap-2">
             <span
               className="space-stage-index text-[9px] tracking-widest transition-all duration-300"
@@ -416,7 +398,7 @@ export default function SpaceOverlay() {
         }}
       >
         <p className="sr-only">
-          SCROLL // TRAVEL &nbsp;·&nbsp; DRAG // ORBIT
+          SCROLL OR SWIPE TO TRAVEL
         </p>
         <div className="flex items-center justify-center gap-3">
           <div
@@ -435,10 +417,11 @@ export default function SpaceOverlay() {
                 color: "#f3ead8",
               }}
             >
-              SCROLL TO TRAVEL
+              <span className="space-scroll-label">SCROLL TO TRAVEL</span>
+              <span className="space-swipe-label">SWIPE TO TRAVEL</span>
             </p>
             <p className="space-scroll-meta mt-1 text-[9px]" style={{ color: "rgba(225,222,207,0.72)" }}>
-              SECTOR {String(stageIndex + 1).padStart(2, "0")} <span className="mx-1" style={{ color: "#d8c59b" }}>/</span> {scanPct}% EXPLORED
+              SECTOR {String(Math.min(stageIndex + 1, 4)).padStart(2, "0")} <span className="mx-1" style={{ color: "#d8c59b" }}>/</span> {scanPct}% EXPLORED
             </p>
           </div>
           <span className="text-lg" style={{ color: "#d8c59b", animation: "travel-chevron 1.3s ease-in-out infinite" }}>↓</span>
