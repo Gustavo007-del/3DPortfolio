@@ -1,0 +1,24 @@
+.frame{position:absolute;inset:0;pointer-events:none;color:#f5ead2;font-family:var(--font-mono),monospace}
+.top,.bottom{position:absolute;left:0;right:0;height:8vh;min-height:36px;background:#07100eeb;animation:arrive .5s ease both}
+.top{top:0;transform-origin:top}.bottom{bottom:0;transform-origin:bottom}
+.caption{position:absolute;left:clamp(22px,5vw,75px);bottom:calc(8vh + 25px);font-size:10px;letter-spacing:.25em;text-shadow:0 2px 9px #000}
+.caption i{color:#d5bd88;font-style:normal;margin:0 8px}
+.vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 35%,#050b0a75 100%)}
+.flare{position:absolute;inset:-40%;background:radial-gradient(circle at 58% 35%,#ead5a617,transparent 32%);mix-blend-mode:screen;animation:flareDrift 18s ease-in-out both}
+.shutter{position:absolute;inset:0;background:#e9dfc7;opacity:0;mix-blend-mode:screen;animation:shotFlash 18s linear both}
+.sequence{position:absolute;top:calc(8vh + 24px);right:clamp(22px,5vw,75px);font-size:9px;letter-spacing:.22em;color:#e7cf9f}
+.sequence span{position:absolute;right:0;top:0;white-space:nowrap;opacity:0}
+.phaseOne{animation:phaseOne 18s linear both}.phaseTwo{animation:phaseTwo 18s linear both}.phaseThree{animation:phaseThree 18s linear both}.phaseFour{animation:phaseFour 18s linear both}.phaseFive{animation:phaseFive 18s linear both}
+.progress{position:absolute;left:clamp(22px,5vw,75px);bottom:calc(8vh + 15px);width:min(265px,45vw);height:1px;background:#f6e9c65b;overflow:hidden}
+.progress span{display:block;width:100%;height:100%;background:#f2d69b;transform:scaleX(0);transform-origin:left;animation:tourProgress 18s linear forwards}
+@keyframes arrive{from{scale:1 .2;opacity:0}to{scale:1 1;opacity:1}}
+@keyframes tourProgress{to{transform:scaleX(1)}}
+@keyframes flareDrift{from{transform:translateX(-6%)}to{transform:translateX(9%)}}
+@keyframes phaseOne{0%,17%{opacity:1}20%,100%{opacity:0}}
+@keyframes phaseTwo{0%,18%{opacity:0}21%,38%{opacity:1}41%,100%{opacity:0}}
+@keyframes phaseThree{0%,39%{opacity:0}42%,66%{opacity:1}69%,100%{opacity:0}}
+@keyframes phaseFour{0%,67%{opacity:0}70%,80%{opacity:1}83%,100%{opacity:0}}
+@keyframes phaseFive{0%,81%{opacity:0}84%,100%{opacity:1}}
+@keyframes shotFlash{0%,17.5%,19%,39.5%,41%,67.5%,69%,81.5%,83%,100%{opacity:0}18%,40%,68%,82%{opacity:.13}}
+@media(max-width:640px){.top,.bottom{height:6vh;min-height:25px}.caption{bottom:calc(6vh + 20px);font-size:8px;letter-spacing:.12em}.sequence{top:calc(6vh + 18px);font-size:8px}.progress{bottom:calc(6vh + 10px)}}
+@media(prefers-reduced-motion:reduce){.top,.bottom,.flare,.shutter,.sequence span,.progress span{animation:none}}

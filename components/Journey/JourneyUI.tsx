@@ -2,6 +2,7 @@
 
 import { useJourney } from "./JourneyProvider";
 import { useRide } from "@/components/Island/boat-ride/boatRideStore";
+import cinematicStyles from "./JourneyCinematic.module.css";
 
 export default function JourneyUI() {
   const {
@@ -12,6 +13,9 @@ export default function JourneyUI() {
   beginJourney,
   next,
   previous,
+  cinematic,
+  startCinematic,
+  stopCinematic,
 } = useJourney();
 
   // Hide/dim journey UI while riding (PLAN §10): overlays must not compete
@@ -104,6 +108,22 @@ export default function JourneyUI() {
 
       {started && (
         <>
+          {cinematic === "playing" && <div className={cinematicStyles.frame} aria-hidden="true">
+            <div className={cinematicStyles.vignette} />
+            <div className={cinematicStyles.flare} />
+            <div className={cinematicStyles.shutter} />
+            <div className={cinematicStyles.top} />
+            <div className={cinematicStyles.bottom} />
+            <span className={cinematicStyles.caption}>THE ISLAND <i>·</i> A FINAL PASS</span>
+            <div className={cinematicStyles.sequence}>
+              <span className={cinematicStyles.phaseOne}>01 / COASTAL DIVE</span>
+              <span className={cinematicStyles.phaseTwo}>02 / LOW SWEEP</span>
+              <span className={cinematicStyles.phaseThree}>03 / ISLAND ORBIT</span>
+              <span className={cinematicStyles.phaseFour}>04 / OVERHEAD</span>
+              <span className={cinematicStyles.phaseFive}>05 / WIDE REVEAL</span>
+            </div>
+            <div className={cinematicStyles.progress}><span /></div>
+          </div>}
           <div
             style={{
               position: "absolute",
@@ -118,7 +138,7 @@ export default function JourneyUI() {
               width: "calc(100% - 32px)",
             }}
           >
-            Chapter {currentIndex + 1} of {totalStops}
+            {cinematic === "playing" ? "ISLAND / CINEMATIC FLYOVER" : `Chapter ${currentIndex + 1} of ${totalStops}`}
           </div>
 
           {isTransitioning && (
@@ -140,7 +160,7 @@ export default function JourneyUI() {
                 fontSize: "0.9rem",
               }}
             >
-              Traveling...
+              {cinematic === "playing" ? "A final look around the island" : "Traveling..."}
             </div>
           )}
 
@@ -160,7 +180,7 @@ export default function JourneyUI() {
               }}
             >
               {currentIndex === totalStops - 1
-                ? "You have reached the end"
+                ? cinematic === "complete" ? "The island, seen from above" : "One last journey awaits"
                 : "Choose Next to continue your journey"}
             </div>
           )}
@@ -180,7 +200,7 @@ export default function JourneyUI() {
             
             <button
               onClick={previous}
-              disabled={currentIndex === 0}
+              disabled={currentIndex === 0 || cinematic === "playing"}
               style={{
                 background: "transparent",
                 border: "none",
@@ -198,25 +218,22 @@ export default function JourneyUI() {
             </button>
 
             <button
-              onClick={next}
-              disabled={currentIndex === totalStops - 1}
+              onClick={currentIndex === totalStops - 1
+                ? cinematic === "playing" ? stopCinematic : startCinematic
+                : next}
               style={{
                 background: "transparent",
                 border: "none",
-                color:
-                  currentIndex === totalStops - 1
-                    ? "rgba(255,255,255,0.25)"
-                    : "rgba(255,255,255,0.9)",
+                color: "rgba(255,255,255,0.9)",
                 fontSize: "1rem",
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                cursor:
-                  currentIndex === totalStops - 1
-                    ? "default"
-                    : "pointer",
+                cursor: "pointer",
               }}
             >
-              Next →
+              {currentIndex === totalStops - 1
+                ? cinematic === "playing" ? "Skip tour →" : cinematic === "complete" ? "Replay tour ↺" : "Tour island →"
+                : "Next →"}
             </button>
           </div>
         </>

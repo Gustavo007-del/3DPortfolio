@@ -8,6 +8,7 @@ import { DEFAULT_CAMERA } from "@/lib/camera";
 import { JourneyStop } from "@/lib/journey";
 import { useJourney } from "./JourneyProvider";
 import { consumeRideExitJourneyTransition } from "@/components/Island/boat-ride/boatRideStore";
+import { createIslandTourCurve, getIslandTourFocus, getIslandTourFov, ISLAND_TOUR_END, ISLAND_TOUR_FOCUS, ISLAND_TOUR_SECONDS } from "@/lib/islandCinematic";
 
 export default function JourneyCamera() {
   const controls = useRef<CameraControls>(null);
@@ -18,6 +19,7 @@ export default function JourneyCamera() {
    *  resolves, which left isTransitioning stuck true forever and silently
    *  blocked every boat-ride click (the §12 guard). */
   const pendingTrans = useRef(false);
+  const tourRef = useRef<{ elapsed: number; curve: THREE.CatmullRomCurve3; startTarget: THREE.Vector3; startFov: number } | null>(null);
 
   const {
     started,
@@ -25,6 +27,8 @@ export default function JourneyCamera() {
     beginTransition,
     finishTransition,
     setCameraState,
+    cinematic,
+    finishCinematic,
   } = useJourney();
 
   async function preMove() {
@@ -94,6 +98,11 @@ export default function JourneyCamera() {
   async function transitionToStop() {
     if (!controls.current) return;
 
+    if (controls.current.camera instanceof THREE.PerspectiveCamera) {
+      controls.current.camera.fov = 45;
+      controls.current.camera.updateProjectionMatrix();
+    }
+
     const id = ++transitionId.current;
 
     beginTransition();
@@ -161,6 +170,53 @@ export default function JourneyCamera() {
     void transitionToStop();
   }, [started, currentStop]);
 
+  // Contact unlocks a timed orbit. CameraControls owns the camera throughout;
+  // the curve is sampled in the render loop for steady motion and exact timing.
+  useEffect(() => {
+    if (!started || cinematic !== "playing" || !controls.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      finishCinematic();
+      return;
+    }
+    const cameraControls = controls.current;
+    transitionId.current++;
+    cameraControls.stop();
+    tourRef.current = {
+      elapsed: 0,
+      curve: createIslandTourCurve(cameraControls.camera.position),
+      startTarget: cameraControls.getTarget(new THREE.Vector3()),
+      startFov: cameraControls.camera instanceof THREE.PerspectiveCamera ? cameraControls.camera.fov : 45,
+    };
+
+    beginTransition();
+    pendingTrans.current = true;
+    setCameraState("moving");
+    return () => {
+      tourRef.current = null;
+      transitionId.current++;
+      cameraControls.stop();
+      if (pendingTrans.current) {
+        pendingTrans.current = false;
+        finishTransition();
+      }
+      setCameraState("idle");
+    };
+  }, [started, cinematic]);
+
+  // Skipping and natural completion share the same wide final frame.
+  useEffect(() => {
+    if (cinematic !== "complete") return;
+    void controls.current?.setLookAt(
+      ISLAND_TOUR_END.x, ISLAND_TOUR_END.y, ISLAND_TOUR_END.z,
+      ISLAND_TOUR_FOCUS.x, ISLAND_TOUR_FOCUS.y, ISLAND_TOUR_FOCUS.z,
+      false
+    );
+    if (controls.current?.camera instanceof THREE.PerspectiveCamera) {
+      controls.current.camera.fov = 50;
+      controls.current.camera.updateProjectionMatrix();
+    }
+  }, [cinematic]);
+
   // Runs after the effect above: adopt the CURRENT camera pose as the
   // controls' target so a remount (e.g. after a boat ride restores the
   // previous view) never snaps to a stale/default target (PLAN §2.1/§9.1).
@@ -181,7 +237,29 @@ export default function JourneyCamera() {
     );
   }, []);
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera }, delta) => {
+    const tour = tourRef.current;
+    if (tour && controls.current) {
+      tour.elapsed = Math.min(ISLAND_TOUR_SECONDS, tour.elapsed + Math.min(delta, 0.05));
+      const t = tour.elapsed / ISLAND_TOUR_SECONDS;
+      const position = tour.curve.getPointAt(t);
+      const focus = getIslandTourFocus(t, tour.startTarget);
+      void controls.current.setLookAt(position.x, position.y, position.z, focus.x, focus.y, focus.z, false);
+      if (camera instanceof THREE.PerspectiveCamera) {
+        const fov = getIslandTourFov(t, tour.startFov);
+        if (Math.abs(camera.fov - fov) > 0.01) {
+          camera.fov = fov;
+          camera.updateProjectionMatrix();
+        }
+      }
+      if (t >= 1) {
+        tourRef.current = null;
+        pendingTrans.current = false;
+        finishTransition();
+        setCameraState("idle");
+        finishCinematic();
+      }
+    }
     const target = controls.current?.getTarget(new THREE.Vector3());
 
     (window as any).__cameraDebug = {

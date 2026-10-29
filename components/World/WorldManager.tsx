@@ -17,7 +17,7 @@ import AudioButton from "@/components/Audio/AudioButton";
 import AudioDebug from "@/components/Audio/AudioDebug";
 import JourneyCamera from "@/components/Journey/JourneyCamera";
 import JourneyUI from "@/components/Journey/JourneyUI";
-import { JourneyProvider } from "@/components/Journey/JourneyProvider";
+import { JourneyProvider, useJourney } from "@/components/Journey/JourneyProvider";
 import ChapterPanel from "@/components/Journey/ChapterPanel";
 import { WindProvider } from "@/components/fire/WindContext";
 import SolarSystem from "@/components/scene/SolarSystem";
@@ -48,6 +48,7 @@ function SpaceLayer() {
 
 function JourneyOverlay() {
   const { phase } = useWorldState();
+  const { cinematic } = useJourney();
   if (phase !== "ISLAND") return null;
   return (
     <>
@@ -55,8 +56,8 @@ function JourneyOverlay() {
       <ChapterPanel />
       {/* DOM side of the shipwreck interaction (PLAN §6.2) — must stay
           outside the Canvas */}
-      <ShipwreckHotspot />
-      <IslandControls />
+      {cinematic !== "playing" && <ShipwreckHotspot />}
+      {cinematic !== "playing" && <IslandControls />}
     </>
   );
 }

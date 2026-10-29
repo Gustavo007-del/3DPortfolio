@@ -241,6 +241,7 @@ export default function BoatRideController() {
       if (document.pointerLockElement) return;
       if (ctx.lodActive === false) return;
       if (ctx.world && ctx.world.phase !== "ISLAND") return;
+      if (ctx.journey?.cinematic === "playing") return;
       // The old `journey.isTransitioning` guard is intentionally gone: that
       // flag leaks true whenever JourneyCamera unmounts mid-transition (space
       // scroll, previous ride), permanently killing every click until reload.

@@ -12,7 +12,7 @@ import AudioButton from "@/components/Audio/AudioButton";
 import AudioDebug from "@/components/Audio/AudioDebug";
 import JourneyCamera from "@/components/Journey/JourneyCamera";
 import JourneyUI from "@/components/Journey/JourneyUI";
-import { JourneyProvider } from "@/components/Journey/JourneyProvider";
+import { JourneyProvider, useJourney } from "@/components/Journey/JourneyProvider";
 import CameraDebug from "@/components/Journey/CameraDebug";
 import ChapterPanel from "@/components/Journey/ChapterPanel";
 import { WindProvider } from "@/components/fire/WindContext";
@@ -28,6 +28,16 @@ const Leva = dynamic(
     ssr: false,
   }
 );
+
+function IslandOverlays() {
+  const { cinematic } = useJourney();
+  return <>
+    <JourneyUI />
+    <ChapterPanel />
+    {cinematic !== "playing" && <ShipwreckHotspot />}
+    {cinematic !== "playing" && <IslandControls />}
+  </>;
+}
 
 export default function Page() {
   const ride = useRide();
@@ -56,11 +66,7 @@ export default function Page() {
             </WindProvider>
           </Canvas>
 
-          <JourneyUI />
-          <ChapterPanel />
-          {/* Shipwreck hotspot UI — DOM, must be outside the Canvas (PLAN §6.2) */}
-          <ShipwreckHotspot />
-          <IslandControls />
+          <IslandOverlays />
           <BoatRideHUD />
           <AudioButton />
           <AudioController />

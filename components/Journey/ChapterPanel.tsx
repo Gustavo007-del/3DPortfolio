@@ -31,9 +31,9 @@ const CHAPTER_COPY: Record<string, { lead: string; detail: string }> = {
 };
 
 export default function ChapterPanel() {
-  const { started, currentStop } = useJourney();
+  const { started, currentStop, cinematic } = useJourney();
   const ride = useRide();
-  if (!started || ride.phase !== "idle") return null;
+  if (!started || ride.phase !== "idle" || cinematic !== "idle") return null;
 
   const copy = CHAPTER_COPY[currentStop.id] ?? CHAPTER_COPY.dock;
   const number = String(JOURNEY_STOPS.findIndex((stop) => stop.id === currentStop.id) + 1).padStart(2, "0");
